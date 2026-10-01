@@ -437,6 +437,40 @@ function runFixes(){
     S.items.push({id:uid(),sec:(S.secs.find(x=>x.type==='card')||{k:'cards'}).k,name:'HDFC Tata Neu Plus Rupay bill',amt:0,day:1,freq:'monthly',start:START,remind:1,cardId:id,hold:true,note:'Turn off "Don\'t pay" once the card is active'});}
   S.fixes.f1=true;return true;
 }
+function runFixes3(){
+  S.fixes=S.fixes||{};if(S.fixes.f3)return false;
+  const L=l=>S.cards.find(c=>c.last4===l),bill=c=>c&&S.items.find(i=>i.cardId===c.id);
+  const setC=(c,o)=>{if(!c)return;Object.assign(c,o,{ok:true});const b=bill(c);if(b){b.name=c.name+' bill';b.day=c.due;b.ok=true}};
+  // Axis: statement emails show Indian Oil = ••2152 and Airtel = ••4936
+  setC(L('2152'),{name:'Axis Indian Oil',stmt:19,due:9,fee:'Lifetime free',note:''});
+  setC(L('4936'),{name:'Axis Airtel',stmt:14,due:2,fee:'₹500+GST/yr, waived on ₹2L spend',note:''});
+  // ICICI: Amazon Pay = ••3000, RuPay = ••5008 (both due on the 30th)
+  const amz=S.cards.find(c=>/icici amazon/i.test(c.name)),rup=S.cards.find(c=>/icici rupay/i.test(c.name));
+  setC(amz,{last4:'3000',due:30,note:'13L limit shared with ICICI RuPay'});
+  setC(rup,{last4:'5008',due:30,note:'Shares ICICI 13L limit'});
+  S.fixes.f3=true;return true;
+}
+function runFixes4(){
+  S.fixes=S.fixes||{};if(S.fixes.f4)return false;
+  const ins=(S.secs.find(x=>x.k==='ins')||S.secs.find(x=>x.type==='out')).k,sv=(S.secs.find(x=>x.k==='save')||S.secs.find(x=>x.type==='out')).k;
+  if(!S.items.some(i=>/click 2 protect/i.test(i.name)))S.items.push({id:uid(),sec:ins,name:'HDFC Life Click 2 Protect',amt:5049,day:26,freq:'monthly',start:START,remind:1,mode:'Auto-debit',note:'Auto-debit via Axis AutoPay',ok:true});
+  const sips=S.items.filter(i=>/stock sips/i.test(i.name));
+  const s5=sips.find(i=>+i.day===5),s10=sips.find(i=>+i.day===10);
+  if(s5)Object.assign(s5,{name:'ICICI MF SIP',amt:5000,day:5,mode:'Auto-debit',note:'ICICI Direct'});
+  if(s10)Object.assign(s10,{name:'ICICI MF SIP',amt:1000,day:11,mode:'Auto-debit',note:'ICICI Direct'});
+  if(!S.items.some(i=>/icici mf sip/i.test(i.name)&&+i.amt===2000))S.items.push({id:uid(),sec:sv,name:'ICICI MF SIP',amt:2000,day:5,freq:'monthly',start:START,remind:1,mode:'Auto-debit',note:'ICICI Direct',ok:true});
+  S.fixes.f4=true;return true;
+}
+function runFixes5(){
+  S.fixes=S.fixes||{};if(S.fixes.f5)return false;
+  const F=(rx,o)=>{const it=S.items.find(i=>rx.test(i.name));if(it)Object.assign(it,o)};
+  F(/^LIC Jeevan Anand$/i,{day:30,freq:'months',months:[4],note:'Paid 30 Apr 2026 (LIC receipt)',ok:true});
+  F(/^LIC Jeevan Lakshya$/i,{day:30,freq:'months',months:[4],note:'Paid 30 Apr 2026 (LIC receipt)',ok:true});
+  F(/^LIC Jeevan Lakshya \(2\)$/i,{day:31,freq:'months',months:[7],note:'Paid 31 Jul 2026 (LIC receipt)',ok:true});
+  F(/^LIC Jeevan Sathi$/i,{day:31,freq:'months',months:[5,11],note:'Email shows a May payment; sheet says Nov — confirm if yearly or half-yearly',ok:false});
+  F(/^MaxLife$/i,{name:'Axis Max Life',day:18,freq:'months',months:[11],note:'Due 18 Nov (from Max Life email)',ok:true});
+  S.fixes.f5=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -445,7 +479,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();runFixes();runFixes2();
+let S=load();normPin();runFixes();runFixes2();runFixes3();runFixes4();runFixes5();
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -469,7 +503,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2();if(fx1||fx2)save();else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5();if(fx1||fx2||fx3||fx4||fx5)save();else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -505,7 +539,9 @@ function initSync(){
       first=false;
       const changed=Object.keys(m).some(k=>pushed[k]!==m[k]);
       Object.assign(pushed,m);
-      if(changed){try{applyRemote(m)}catch(e){}}else if(mailChanged&&$('#lock').classList.contains('hide'))render();
+      if(changed){try{applyRemote(m)}catch(e){}}
+      const auto=MAIL.length?autoMail():0;
+      if((auto||mailChanged)&&!changed&&$('#lock').classList.contains('hide'))render();
       setSync('ok','Synced across your devices');
     },e=>setSync('off','Sync error — '+(e&&e.code||'check Firestore rules')));
   });
@@ -643,16 +679,17 @@ function row(x){
    <button class="tk" onclick="tickItem('${x.it.id}','${x.ym}')" aria-label="${x.paid?'Undo':'Mark paid'}: ${esc(x.it.name)}">${x.paid?'✓':''}</button></div>`;
 }
 function plainRow(it){return `<div class="row"><button class="rb" onclick="editItem('${it.id}')"><b>${esc(it.name)}</b><small>${esc(secOf(it.sec).t)} · not due in ${mName(YM)}</small></button><div class="ra"><b>${+it.amt?rs(it.amt):'—'}</b></div><button class="tk ed" onclick="editItem('${it.id}')" aria-label="Edit">✏️</button></div>`}
-function spendRow(s){return `<div class="row"><span class="cic" aria-hidden="true">${catIc(s.cat)}</span><button class="rb" onclick="spendForm('${s.id}')"><b>${esc(s.desc||s.cat)}</b><small>${esc([dLabel(s.date),modeName(s.mode)].join(' · '))}</small></button><div class="ra"><b>${rs(s.amount)}</b></div></div>`}
+function spendRow(s){return `<div class="row"><span class="cic" aria-hidden="true">${catIc(s.cat)}</span><button class="rb" onclick="spendForm('${s.id}')"><b>${esc(s.desc||s.cat)}${s.auto?' <span class="tag2" style="margin-left:4px">📩 email</span>':''}</b><small>${esc([dLabel(s.date),modeName(s.mode)].join(' · '))}</small></button><div class="ra"><b>${rs(s.amount)}</b></div></div>`}
 
 /* ---------- email suggestions ---------- */
 let MAIL=[],mailAll=false;
 const BANKRX=[[/icici/i,/icici/i],[/hdfc/i,/hdfc/i],[/axis/i,/axis/i],[/indus/i,/indus/i],[/sbi/i,/sbi/i],[/bob|uni/i,/bob|uni/i]];
 function findCard(bank,l4){
-  if(l4){const c=S.cards.find(c=>c.last4===l4);if(c)return{c}}
+  if(l4&&l4.length===2){const cs=S.cards.filter(c=>c.last4&&c.last4.endsWith(l4));if(cs.length===1)return{c:cs[0]}}
+  if(l4&&l4.length===4){const c=S.cards.find(c=>c.last4===l4);if(c)return{c}}
   const rx=(BANKRX.find(([a])=>a.test(bank||''))||[])[1];if(!rx)return null;
   const cs=S.cards.filter(c=>rx.test(c.name)&&(l4?!c.last4:true));
-  return cs.length===1?{c:cs[0],setL4:l4||''}:null;
+  return cs.length===1?{c:cs[0],setL4:l4&&l4.length===4?l4:''}:null;
 }
 function billFor(c,dateStr,isPaid){
   const it=S.items.find(i=>i.cardId===c.id);if(!it)return null;
@@ -660,36 +697,133 @@ function billFor(c,dateStr,isPaid){
   for(const ym of [ymOf(dateStr),addM(ymOf(dateStr),1)]){if(!occurs(it,ym))continue;const e=entry(it,ym),d=daysTo(e.date)-daysTo(dateStr);if(d>=-7&&d<=25)return e}
   return null;
 }
+function findLoan(m){const ls=S.items.filter(i=>tOf(i)==='loan');return ls.find(i=>Math.abs((+i.amt||0)-m.emi)<=1)||ls.find(i=>+i.amt&&Math.abs(i.amt-m.emi)/m.emi<.02)||null}
+const near=(a,b)=>Math.abs(a-b)<=1;
+/* bank-account debit → the unpaid loan or bill it paid (same amount, within a week of its due date) */
+function matchDebit(m){
+  const ym=ymOf(m.date),c=[];
+  [addM(ym,-1),ym,addM(ym,1)].forEach(y=>entries(y).forEach(x=>{
+    if(isIn(x.it)||tOf(x.it)==='card'||x.it.hold)return;if(m.loan&&tOf(x.it)!=='loan')return;
+    const amt=x.amt||lastAmt(x.it,x.ym);if(!amt||!near(m.amt,amt))return;
+    const d=daysTo(x.date)-daysTo(m.date);if(d<-10||d>7)return;c.push(x)}));
+  const un=c.filter(x=>!x.paid);return un.length===1?{x:un[0]}:c.length&&!un.length?{dup:true}:null;
+}
+function cardByAmount(m){
+  const rx=(BANKRX.find(([a])=>a.test(m.bank||''))||[])[1];if(!rx)return null;
+  const hits=S.cards.filter(c=>rx.test(c.name)).map(c=>({c,b:billFor(c,m.date,true)})).filter(o=>o.b&&near(m.amt,o.b.amt||lastAmt(o.b.it,o.b.ym)||-1));
+  return hits.length===1?{c:hits[0].c}:null;
+}
+function insSec(){return (S.secs.find(x=>x.k==='ins')||S.secs.find(x=>/insur/i.test(x.t))||S.secs.find(x=>x.type==='out')).k}
+function insItems(){return S.items.filter(i=>i.sec===insSec()||/\b(lic|life|insur|policy|premium)\b/i.test(i.name))}
+function findIns(m){
+  const L=insItems(),words=s=>String(s||'').toLowerCase().replace(/hdfc life|lic|plus|\+|3d/g,' ').split(/\W+/).filter(w=>w.length>3);
+  if(m.plan){const w=words(m.plan);const hit=L.find(i=>w.length&&w.every(x=>i.name.toLowerCase().includes(x)));if(hit)return hit}
+  const byAmt=L.filter(i=>Math.abs((+i.amt||0)-m.amt)<=1);
+  if(byAmt.length===1)return byAmt[0];
+  if(byAmt.length>1){const mo=+(m.date||m.due).slice(5,7);return byAmt.find(i=>i.freq==='monthly'||(i.months||[]).includes(mo))||byAmt[0]}
+  return null;
+}
+const FREQ_MONTHS=(f,mo)=>{f=String(f||'').toLowerCase();if(/month/.test(f))return null;if(/quarter/.test(f))return[0,3,6,9].map(k=>((mo-1+k)%12)+1).sort((a,b)=>a-b);if(/half/.test(f))return[mo,((mo+5)%12)+1].sort((a,b)=>a-b);return[mo]};
+function mailText(m){
+  if(m.kind==='ins'){const it=findIns(m),d=m.paid?m.date:m.due;
+    return{t:it?`${it.name} ${m.paid?'premium paid':'premium due'} ${rs(m.amt)}`:`New policy: ${m.insurer}${m.plan?' '+m.plan:''} ${rs(m.amt)}`,s:`${m.paid?'Paid':'Due'} ${dLabel(d)} ${d.slice(0,4)}${it?'':' · added to Insurance'}`,ok:true,f:{},ins:it}}
+  if(m.kind==='loan'){const it=findLoan(m),ao=addM(ymOf(m.asOf),1),now=it?loanLeft(it,ymOf(today())):null,want=m.left-Math.max(0,mdiff(ao,ymOf(today())));
+    return{t:it?`${it.name}: ${want} EMIs left`:`${m.bank} ${m.type||'loan'} · EMI ${rs(m.emi)}`,s:`Bank summary as of ${dLabel(m.asOf)} ${m.asOf.slice(0,4)} · ${m.roi}%${it?` · app said ${now==null?'no tenure':now+' left'}`:' · loan not found in app'}`,ok:!!it,dup:!!(it&&now===want&&+it.roi===m.roi),f:it?{}:null,loan:it}}
+  if(m.kind==='debit'){const r=matchDebit(m);
+    return r&&r.x?{t:`${r.x.it.name} paid ${rs(m.amt)}`,s:`${dLabel(m.date)} · ${m.acct?'from '+m.bank+' a/c ••'+m.acct:m.bank+' email'}`,ok:true,f:{},hit:r.x}:{t:'',s:'',ok:false,dup:true,hide:true}}
+  const f=findCard(m.bank,m.last4)||(m.kind==='paid'&&!m.last4?cardByAmount(m):null),cn=f?f.c.name+(f.c.last4||f.setL4?' ••'+(f.c.last4||f.setL4):''):`${m.bank} ••${m.last4||'?'}`;
+  if(m.kind==='paid'){const b=f&&billFor(f.c,m.date,true);return{t:`${cn} bill paid ${rs(m.amt)}`,s:`${dLabel(m.date)}${m.via?' · via '+m.via:''}${b?b.paid?' · already marked':` · for bill due ${dLabel(b.date)}`:' · no matching bill'}`,ok:!!(f&&b&&!b.paid),dup:!!(b&&b.paid),f}}
+  if(m.kind==='bill'){const b=f&&billFor(f.c,m.due,false);return{t:m.amt?`${cn} bill ${rs(m.amt)}`:`${cn}: nothing to pay (credit balance)`,s:`Due ${dLabel(m.due)}${b&&b.it&&+dueOn(b.it,b.ym).slice(8)!==+m.due.slice(8)?` · app said ${ord(dueOn(b.it,b.ym).slice(8))}`:''}${b&&b.paid?' · already paid':''}`,ok:!!(f&&b&&!b.paid),dup:!!(b&&b.paid&&(b.amt===m.amt||!m.amt)),f}}
+  return{t:`${rs(m.amt)} · ${cleanMerchant(m.merchant)||'Card spend'}`,s:`${dLabel(m.date)} · ${cn} · ${guessCat(cleanMerchant(m.merchant))}`,ok:!!f,f};
+}
 function mailPending(){
   S.mailDone=S.mailDone||{};
   const cut=new Date(START+'-01T00:00');cut.setDate(cut.getDate()-10);const C=`${cut.getFullYear()}-${pad2(cut.getMonth()+1)}-${pad2(cut.getDate())}`;
-  return MAIL.filter(m=>!S.mailDone[m.id]&&(m.kind==='paid'?(m.date||'')>=C:(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
+  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
 }
-function mailText(m){
-  const f=findCard(m.bank,m.last4),cn=f?f.c.name+(f.c.last4||f.setL4?' ••'+(f.c.last4||f.setL4):''):`${m.bank} ••${m.last4||'?'}`;
-  if(m.kind==='paid'){const b=f&&billFor(f.c,m.date,true);return{t:`${cn} bill paid ${rs(m.amt)}`,s:`${dLabel(m.date)}${m.via?' · via '+m.via:''}${b?b.paid?' · already marked':` · for bill due ${dLabel(b.date)}`:' · no matching bill'}`,ok:!!(f&&b&&!b.paid),dup:!!(b&&b.paid),f}}
-  if(m.kind==='bill'){const b=f&&billFor(f.c,m.due,false);return{t:`${cn} bill ${rs(m.amt)}`,s:`Due ${dLabel(m.due)}${b&&b.it&&+dueOn(b.it,b.ym).slice(8)!==+m.due.slice(8)?` · app says ${ord(dueOn(b.it,b.ym).slice(8))}`:''}${b&&b.paid?' · already paid':''}`,ok:!!(f&&b&&!b.paid),dup:!!(b&&b.paid),f}}
-  return{t:`${rs(m.amt)} · ${m.merchant||'Card spend'}`,s:`${dLabel(m.date)} · ${cn}`,ok:!!f,f};
-}
+const AUTO_KINDS=['paid','bill','loan','debit'];
+const autoKind=k=>k==='ins'||AUTO_KINDS.includes(k)||(k==='spend'&&S.autoSpend!==false);
+const CAT_RX=[['Groceries',/mart|kirana|supermarket|grocer|fresh|bigbasket|blinkit|zepto|instamart|dmart|avenue supermarts|ratnadeep|vegetable|milk/i],
+ ['Fuel',/petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|filling|bunk/i],
+ ['Food',/swiggy|zomato|restaurant|cafe|hotel|biryani|bakery|food|kitchen|dhaba|pizza|chai|tea/i],
+ ['Medical',/pharma|medic|hospital|apollo|clinic|diagnos|lab|health|chemist|netmeds|1mg/i],
+ ['Shopping',/amazon|flipkart|myntra|ajio|meesho|nykaa|reliance|trends|lifestyle|decathlon/i],
+ ['Travel',/uber|ola|rapido|irctc|makemytrip|redbus|indigo|airline|metro|toll|fastag|parking/i],
+ ['Bills',/bbps|utility|electric|airtel|jio|recharge|broadband|water|gas|society|maintenance/i],
+ ['Entertainment',/netflix|hotstar|prime video|spotify|bookmyshow|pvr|inox|google play|youtube/i],
+ ['Home',/home needs|furniture|hardware|paint|electricals/i]];
+function guessCat(merchant){const m=String(merchant||'');const hit=CAT_RX.find(([,rx])=>rx.test(m));const c=hit?hit[0]:'Other';return S.cats.includes(c)?c:(S.cats.includes('Other')?'Other':S.cats[0])}
+const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
 function mailBox(){
-  const L=mailPending();if(!L.length)return'';
+  const L=mailPending().filter(m=>m.kind!=='ins'&&!(S.autoMail!==false&&autoKind(m.kind)&&mailText(m).ok));if(!L.length)return'';
   const sh=mailAll?L:L.slice(0,5),nOk=L.filter(m=>mailText(m).ok).length;
-  return `<section class="card2" style="--c:#0f9488"><div class="mh"><div class="rb"><b>📩 From your email (${L.length})</b><small>Tap ✓ to add · ✕ to ignore</small></div>${nOk>1?`<button class="btn" style="height:36px" onclick="mailApplyAll()">Apply all ${nOk}</button>`:''}</div>
-   ${sh.map(m=>{const x=mailText(m);return `<div class="row"><span class="cic" aria-hidden="true">${m.kind==='spend'?'💳':m.kind==='paid'?'✅':'🧾'}</span><div class="rb"><b>${esc(x.t)}</b><small>${esc(x.s)}${x.f?'':' · card not in your list'}</small></div>
+  return `<section class="card2" style="--c:#0f9488"><div class="mh"><div class="rb"><b>📩 From your email (${L.length})</b><small>Tap ✓ to add · ✕ to ignore</small></div>${nOk>1?`<button class="btn" style="height:36px" onclick="mailApplyAll()">Add all ${nOk}</button>`:''}</div>
+   ${sh.map(m=>{const x=mailText(m);return `<div class="row"><span class="cic" aria-hidden="true">${m.kind==='spend'?'💳':m.kind==='paid'||m.kind==='debit'?'✅':m.kind==='loan'?'🏦':'🧾'}</span><div class="rb"><b>${esc(x.t)}</b><small>${esc(x.s)}${x.f?'':' · card not in your list'}</small></div>
     <button class="tk ed" onclick="mailDone('${m.id}')" aria-label="Ignore">✕</button>${x.ok?`<button class="tk okb" onclick="mailApply('${m.id}')" aria-label="Apply">✓</button>`:x.f?'':`<button class="tk ed" onclick="mailAddCard('${m.id}')" aria-label="Add card">＋</button>`}</div>`}).join('')}
    ${L.length>5?`<button class="more" onclick="mailAll=!mailAll;render()">${mailAll?'Show less':'Show all '+L.length}</button>`:''}</section>`;
 }
-function mailDone(id,quiet){S.mailDone=S.mailDone||{};S.mailDone[id]=1;if(!quiet){save();render()}}
-function mailApply(id,quiet){
-  const m=MAIL.find(x=>x.id===id);if(!m)return;const x=mailText(m);if(!x.ok)return;
-  const c=x.f.c;if(x.f.setL4&&!c.last4)c.last4=x.f.setL4;
-  if(m.kind==='spend'){S.spends.push({id:uid(),amount:m.amt,date:m.date,desc:m.merchant||'',mode:'card:'+c.id,cat:'Other',kind:'Regular',at:Date.now(),src:id})}
-  if(m.kind==='bill'&&m.due){const d=+m.due.slice(8),it=S.items.find(i=>i.cardId===c.id);c.due=d;if(it){it.day=d;if(it.hold&&!it.amt){it.hold=false;it.note=''}}}
-  else{}
-  if(m.kind!=='spend'){const b=billFor(c,m.kind==='paid'?m.date:m.due,m.kind==='paid');if(b){const r=S.rec[b.key]||{};S.rec[b.key]=m.kind==='paid'?{...r,amt:m.amt,paid:true,date:m.date,mode:m.via||r.mode||''}:{...r,amt:m.amt}}}
-  mailDone(id,true);if(!quiet){save();render();toast('Added from email')}
+let logAll=false;
+function autoLogBox(){
+  const L=(S.mailLog||[]).filter(l=>!l.undone);if(!L.length)return'';
+  const recent=L.filter(l=>Date.now()-l.at<7*864e5);if(!recent.length)return'';
+  const sh=logAll?recent:recent.slice(0,3);
+  return `<section class="card2" style="--c:#0f7a3d"><div class="mh"><div class="rb"><b>🔄 Updated from email (${recent.length})</b><small>Last 7 days · tap Undo if anything is wrong</small></div></div>
+   ${sh.map(l=>`<div class="row"><span class="cic" aria-hidden="true">${l.ic||'✅'}</span><div class="rb"><b>${esc(l.t)}</b><small>${esc(l.s)}</small></div><button class="btn lnk" onclick="undoLog('${l.id}')">Undo</button></div>`).join('')}
+   ${recent.length>3?`<button class="more" onclick="logAll=!logAll;render()">${logAll?'Show less':'Show all '+recent.length}</button>`:''}</section>`;
 }
-function mailApplyAll(){const L=mailPending().filter(m=>mailText(m).ok);L.forEach(m=>mailApply(m.id,true));save();render();toast(L.length+' updates added')}
+function mailDone(id,quiet){S.mailDone=S.mailDone||{};S.mailDone[id]=1;if(!quiet){save();render()}}
+function mailApply(id,quiet,auto){
+  const m=MAIL.find(x=>x.id===id);if(!m)return false;const x=mailText(m);if(!x.ok)return false;
+  const U=[],recU=k=>U.push({t:'rec',key:k,prev:S.rec[k]?{...S.rec[k]}:null}),itU=it=>U.push({t:'item',id:it.id,prev:{...it}}),cU=c=>U.push({t:'card',id:c.id,prev:{...c}});
+  if(m.kind==='ins'){
+    const d=m.paid?m.date:m.due,mo=+d.slice(5,7),day=+d.slice(8);let it=x.ins;
+    if(!it){it={id:uid(),sec:insSec(),name:`${m.insurer}${m.plan?' · '+m.plan.replace(/^HDFC Life\s*/i,''):' policy'}`,amt:m.amt,day,freq:'months',months:[mo],start:START,remind:1,mode:'',note:'Added from email',ok:true};
+      const fm=m.freq?FREQ_MONTHS(m.freq,mo):null;if(m.freq&&!fm)it.freq='monthly';else if(fm)it.months=fm;
+      S.items.push(it);U.push({t:'newitem',id:it.id})}
+    else{itU(it);it.amt=m.amt;
+      if(m.freq){const fm=FREQ_MONTHS(m.freq,mo);if(!fm)it.freq='monthly';else{it.freq='months';it.months=fm}}
+      else if(it.freq==='months'&&!(it.months||[]).includes(mo)&&m.paid){it.months=[...(it.months||[]),mo].sort((a,b)=>a-b)}
+      if(!m.paid||it.freq!=='monthly'){it.day=day}
+      if(NEEDS.test(it.note||''))it.note=`${m.paid?'Paid':'Due'} ${dLabel(d)} ${d.slice(0,4)} (from email)`;it.ok=true}
+    const ym=ymOf(d);
+    if(m.paid&&ym>=START&&occurs(it,ym)){const k=it.id+'|'+ym;recU(k);S.rec[k]={...(S.rec[k]||{}),amt:m.amt,paid:true,date:m.date,mode:m.insurer+' (email)'}}
+  }
+  else if(m.kind==='loan'){const it=x.loan;itU(it);it.asOf=addM(ymOf(m.asOf),1);it.left=m.left;if(m.roi)it.roi=m.roi;it.amt=m.emi;it.pending=m.left*m.emi;it.ok=true}
+  else if(m.kind==='debit'){const e=x.hit;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.acct?`${m.bank} a/c ••${m.acct}`:`${m.bank} (email)`}}
+  else{
+    const c=x.f.c;
+    if(m.kind==='spend'){if(S.spends.some(s=>s.src===id))return false;const nm=cleanMerchant(m.merchant);S.spends.push({id:uid(),amount:m.amt,date:m.date,desc:nm,mode:'card:'+c.id,cat:guessCat(nm),kind:'Ad hoc',at:Date.now(),src:id,auto:true});U.push({t:'spend',src:id})}
+    else{
+      cU(c);if(x.f.setL4&&!c.last4)c.last4=x.f.setL4;
+      const it=S.items.find(i=>i.cardId===c.id);
+      if(m.kind==='bill'&&m.due){if(it)itU(it);const d=+m.due.slice(8);c.due=d;if(it){it.day=d;if(it.hold&&!it.amt){it.hold=false;it.note=''}}}
+      const b=billFor(c,m.kind==='paid'?m.date:m.due,m.kind==='paid');
+      if(b){recU(b.key);const r=S.rec[b.key]||{};S.rec[b.key]=m.kind==='paid'?{...r,amt:m.amt,paid:true,date:m.date,mode:m.via||r.mode||''}:{...r,amt:m.amt,...(m.amt===0?{paid:true,date:m.due,mode:'Nothing due (credit balance)'}:{})}}
+    }
+  }
+  mailDone(id,true);
+  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
+  S.mailLog=S.mailLog.slice(0,60);
+  if(!quiet){save();render();toast('Updated from email')}
+  return true;
+}
+function undoLog(lid){
+  const l=(S.mailLog||[]).find(x=>x.id===lid);if(!l||l.undone)return;
+  (l.U||[]).slice().reverse().forEach(u=>{
+    if(u.t==='rec'){if(u.prev)S.rec[u.key]=u.prev;else delete S.rec[u.key]}
+    if(u.t==='item'){const i=S.items.findIndex(x=>x.id===u.id);if(i>=0)S.items[i]=u.prev}
+    if(u.t==='card'){const i=S.cards.findIndex(x=>x.id===u.id);if(i>=0)S.cards[i]=u.prev}
+    if(u.t==='spend')S.spends=S.spends.filter(s=>s.src!==u.src);
+    if(u.t==='newitem'){S.items=S.items.filter(i=>i.id!==u.id);Object.keys(S.rec).forEach(k=>{if(k.startsWith(u.id+'|'))delete S.rec[k]})}
+  });
+  l.undone=true;save();render();toast('Undone');
+}
+function autoMail(){
+  let n=0;
+  mailPending().filter(m=>m.kind==='ins'||(S.autoMail!==false&&autoKind(m.kind))).sort((a,b)=>(a.at||0)-(b.at||0)).forEach(m=>{if(mailApply(m.id,true,true))n++});
+  if(n)save();return n;
+}
+function mailApplyAll(){const L=mailPending().filter(m=>mailText(m).ok);let n=0;L.forEach(m=>{if(mailApply(m.id,true))n++});save();render();toast(n+' updates added')}
 function mailAddCard(id){const m=MAIL.find(x=>x.id===id);cardForm();setTimeout(()=>{const n=document.getElementById('cn'),l=document.getElementById('c4');if(n)n.value=m.bank+' card';if(l)l.value=m.last4||''},0)}
 function emailReader(){
   const code=typeof FA!=='undefined'&&FA&&FA.currentUser?FA.currentUser.uid:'';
@@ -749,7 +883,7 @@ function vPay(){
       ${!early.length&&!es.length?`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`:''}
     </section>`;
   }
-  return top+mailBox()+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body;
+  return top+autoLogBox()+mailBox()+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body;
 }
 
 /* ---------- screen 2: Summary ---------- */
@@ -866,6 +1000,8 @@ function vManage(){
    <button onclick="catsForm()">🏷️ Expense categories<small>${S.cats.length} categories</small></button>
    <button onclick="S.showHold=!S.showHold;save();render()">🚫 Don't-pay items<small>${S.showHold?'Shown':'Hidden'}</small></button>
    <button onclick="emailReader()">📩 Email reader<small>${MAIL.length?MAIL.length+' emails read':'Set up once'}</small></button>
+   <button onclick="S.autoSpend=S.autoSpend===false;save();render()">🧾 Auto-add card spends<small>${S.autoSpend===false?'Off · ask me first':'On · from card alerts'}</small></button>
+   <button onclick="S.autoMail=S.autoMail===false;save();render()">🔄 Auto-mark paid<small>${S.autoMail===false?'Off · ask me first':'On · from bank emails'}</small></button>
    <button onclick="cashForm()">🏦 Money in bank<small>${S.cash?rs(S.cash.amt):'Not set'}</small></button>
   </div></section>
   <section class="card2" style="--c:#0f9488"><h3>💾 Data</h3><div class="setg">
