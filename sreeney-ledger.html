@@ -471,6 +471,13 @@ function runFixes5(){
   F(/^MaxLife$/i,{name:'Axis Max Life',day:18,freq:'months',months:[11],note:'Due 18 Nov (from Max Life email)',ok:true});
   S.fixes.f5=true;return true;
 }
+function runFixes6(){
+  S.fixes=S.fixes||{};if(S.fixes.f6)return false;
+  const h=S.items.find(i=>/click 2 protect/i.test(i.name));if(h)Object.assign(h,{amt:5049,day:26,freq:'monthly',ok:true});
+  const MI={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  S.mailLog=(S.mailLog||[]).filter(l=>{const m=/(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})/.exec(l.s||'');if(!m)return true;return `${m[3]}-${pad2(MI[m[2]])}`>=START});
+  S.fixes.f6=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -479,7 +486,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();runFixes();runFixes2();runFixes3();runFixes4();runFixes5();
+let S=load();normPin();runFixes();runFixes2();runFixes3();runFixes4();runFixes5();runFixes6();
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -503,7 +510,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5();if(fx1||fx2||fx3||fx4||fx5)save();else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6();if(fx1||fx2||fx3||fx4||fx5||fx6)save();else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -776,17 +783,23 @@ function mailApply(id,quiet,auto){
   const m=MAIL.find(x=>x.id===id);if(!m)return false;const x=mailText(m);if(!x.ok)return false;
   const U=[],recU=k=>U.push({t:'rec',key:k,prev:S.rec[k]?{...S.rec[k]}:null}),itU=it=>U.push({t:'item',id:it.id,prev:{...it}}),cU=c=>U.push({t:'card',id:c.id,prev:{...c}});
   if(m.kind==='ins'){
-    const d=m.paid?m.date:m.due,mo=+d.slice(5,7),day=+d.slice(8);let it=x.ins;
+    const d=m.paid?m.date:m.due,mo=+d.slice(5,7),day=+d.slice(8),recent=daysTo(d)>=-45&&daysTo(d)<=150;let it=x.ins;
+    if(!it&&!m.paid&&!recent){mailDone(id,true);return false}
+    if(it&&!m.paid&&!m.freq&&it.freq==='monthly'){mailDone(id,true);return false}
     if(!it){it={id:uid(),sec:insSec(),name:`${m.insurer}${m.plan?' · '+m.plan.replace(/^HDFC Life\s*/i,''):' policy'}`,amt:m.amt,day,freq:'months',months:[mo],start:START,remind:1,mode:'',note:'Added from email',ok:true};
       const fm=m.freq?FREQ_MONTHS(m.freq,mo):null;if(m.freq&&!fm)it.freq='monthly';else if(fm)it.months=fm;
       S.items.push(it);U.push({t:'newitem',id:it.id})}
-    else{itU(it);it.amt=m.amt;
-      if(m.freq){const fm=FREQ_MONTHS(m.freq,mo);if(!fm)it.freq='monthly';else{it.freq='months';it.months=fm}}
-      else if(it.freq==='months'&&!(it.months||[]).includes(mo)&&m.paid){it.months=[...(it.months||[]),mo].sort((a,b)=>a-b)}
-      if(!m.paid||it.freq!=='monthly'){it.day=day}
-      if(NEEDS.test(it.note||''))it.note=`${m.paid?'Paid':'Due'} ${dLabel(d)} ${d.slice(0,4)} (from email)`;it.ok=true}
+    else{itU(it);
+      if(it.freq==='months'&&m.paid&&!(it.months||[]).includes(mo))it.months=[...(it.months||[]),mo].sort((a,b)=>a-b);
+      if(recent){
+        it.amt=m.amt;
+        if(m.freq){const fm=FREQ_MONTHS(m.freq,mo);if(!fm)it.freq='monthly';else{it.freq='months';it.months=fm}}
+        if(m.freq||it.freq!=='monthly')it.day=day;
+        if(NEEDS.test(it.note||''))it.note=`${m.paid?'Paid':'Due'} ${dLabel(d)} ${d.slice(0,4)} (from email)`;it.ok=true}
+    }
     const ym=ymOf(d);
     if(m.paid&&ym>=START&&occurs(it,ym)){const k=it.id+'|'+ym;recU(k);S.rec[k]={...(S.rec[k]||{}),amt:m.amt,paid:true,date:m.date,mode:m.insurer+' (email)'}}
+    if(ym<START&&!U.some(u=>u.t==='newitem')){mailDone(id,true);return true}
   }
   else if(m.kind==='loan'){const it=x.loan;itU(it);it.asOf=addM(ymOf(m.asOf),1);it.left=m.left;if(m.roi)it.roi=m.roi;it.amt=m.emi;it.pending=m.left*m.emi;it.ok=true}
   else if(m.kind==='debit'){const e=x.hit;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.acct?`${m.bank} a/c ••${m.acct}`:`${m.bank} (email)`}}
@@ -820,6 +833,7 @@ function undoLog(lid){
 }
 function autoMail(){
   let n=0;
+  mailPending().filter(m=>(m.kind==='paid'||m.kind==='debit')&&(m.date||'')<START+'-01'&&!mailText(m).ok).forEach(m=>{mailDone(m.id,true);n++});
   mailPending().filter(m=>m.kind==='ins'||(S.autoMail!==false&&autoKind(m.kind))).sort((a,b)=>(a.at||0)-(b.at||0)).forEach(m=>{if(mailApply(m.id,true,true))n++});
   if(n)save();return n;
 }
