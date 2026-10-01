@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sreeney Ledger</title>
+<meta name="theme-color" content="#1a63e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -112,7 +117,7 @@ button{cursor:pointer}
 .bar{height:6px;border-radius:3px;background:var(--alt);overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;background:var(--accent)}
 
-.fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));height:50px;padding:0 18px;border-radius:25px;border:0;background:var(--accent);color:#fff;font-weight:700;box-shadow:0 8px 20px rgba(26,99,232,.35);z-index:20}
+.fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:58px;height:58px;font-size:30px;line-height:1;border-radius:50%;border:0;background:var(--accent);color:#fff;font-weight:700;box-shadow:0 8px 20px rgba(26,99,232,.35);z-index:20}
 
 /* sheet */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -138,17 +143,95 @@ button{cursor:pointer}
 .qa button{text-align:left;border:1px solid var(--border);background:var(--alt);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
 .qa span{font-size:22px}.qa b{font-weight:800}.qa small{color:var(--muted);font-size:12px}
 .f textarea{min-height:120px}
+.sumbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:10px}
+.sumbar span{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.sumbar b{display:block;font-size:clamp(18px,5vw,26px);font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.sumbar .in{color:var(--green)}.sumbar .out{color:var(--red)}.sumbar .due{color:var(--amber)}
+.salc{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--panel);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow)}
+.salc.ok{border-left-color:var(--green)}.salc.short{border-left-color:var(--red)}
+.salc>div,.salc>button{text-align:left;background:none;border:0;padding:0}
+.salc span{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.salc b{display:block;font-size:19px;font-weight:800}.salc small{color:var(--muted);font-size:12px}
+.salc>button b{color:var(--accent)}
+.salc .verdict{grid-column:1/-1;font-weight:800;font-size:15px}.salc.ok .verdict{color:var(--green)}.salc.short .verdict{color:var(--red)}
+.banner{width:100%;text-align:left;border:1px solid var(--ambb);background:var(--amb);color:var(--amber);font-weight:700;border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.chips button{flex:none;height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--border);background:var(--panel);font-weight:700;font-size:13.5px;color:var(--head)}
+.chips button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.search{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:0 10px;margin-bottom:10px}
+.search input{flex:1;border:0;background:none;height:42px;outline:none;color:var(--text)}
+.search button{border:0;background:none;color:var(--muted);font-size:16px}
+.list,.card2{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:4px 14px 8px;box-shadow:var(--shadow);margin-bottom:12px}
+.card2{border-top:4px solid var(--c,var(--accent));padding:12px 14px}
+.card2 h3{margin:0 0 8px;font-size:15px;font-weight:800;color:var(--head)}
+.gh{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:12px 0 4px;width:100%;border:0;background:none}
+.gh.r{color:var(--red)}.gh.a{color:var(--amber)}.gh.g{color:var(--green)}.gh span{font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;gap:10px;min-height:58px;padding:6px 0;border-top:1px solid var(--border)}
+.gh+.row,.mh+.row,h3+.row{border-top:0}
+.row .rb{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0}
+.row .rb b{display:block;font-weight:700;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .rb small{display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-over .rb small{color:var(--red);font-weight:600}.st-soon .rb small{color:var(--amber);font-weight:600}
+.st-paid .rb b,.st-paid .ra b{color:var(--muted);font-weight:600}
+.st-hold .rb b{color:var(--muted);text-decoration:line-through}
+.row .ra b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ghost{color:var(--muted);font-weight:600;font-size:14px}
+.tk{flex:none;width:42px;height:42px;border-radius:50%;border:2px solid var(--border);background:var(--panel);color:#fff;font-size:18px;font-weight:800;display:grid;place-items:center;padding:0}
+.st-over .tk{border-color:var(--red)}.st-soon .tk{border-color:var(--amber)}
+.st-paid .tk{background:var(--green);border-color:var(--green)}
+.tk.ed{width:36px;height:36px;font-size:15px;color:var(--head);border-width:1px}
+.tk.okb{width:36px;height:36px;color:var(--green);border-color:var(--green);font-size:16px}
+.cic{flex:none;width:42px;height:42px;border-radius:12px;background:var(--alt);display:grid;place-items:center;font-size:20px}
+.report{background:linear-gradient(135deg,#1a63e8,#123fae);color:#fff;border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(18,63,174,.25)}
+.report .rh{display:flex;justify-content:space-between;align-items:center;font-size:18px}
+.btn.lnk.w{color:#fff;border:1px solid rgba(255,255,255,.4);height:34px;padding:0 12px;border-radius:17px}
+.rg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 8px}
+.rg div{background:rgba(255,255,255,.12);border-radius:12px;padding:10px}
+.rg span{display:block;font-size:12px;opacity:.85;font-weight:600}.rg b{display:block;font-size:clamp(16px,4.6vw,22px);font-weight:800}
+.rg em{display:block;font-style:normal;font-size:11.5px;font-weight:700;margin-top:2px}
+.report small{opacity:.9}
+em.gd{color:var(--green);font-style:normal}.report em.gd{color:#86efac}
+em.bd{color:var(--red);font-style:normal}.report em.bd{color:#fca5a5}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.kv div{background:var(--alt);border-radius:10px;padding:10px}.kv span{display:block;font-size:12px;color:var(--muted);font-weight:600}.kv b{font-size:18px;font-weight:800}
+.ins{padding:9px 0;border-top:1px solid var(--border)}.ins b{display:block;font-size:14.5px}.ins small{color:var(--muted);font-size:12.5px}
+.crow{padding:10px 0;border-top:1px solid var(--border)}h3+.crow{border-top:0}
+.crow .ct{display:flex;justify-content:space-between;gap:8px;font-size:14.5px}.crow .ct span{font-size:12.5px;color:var(--muted)}
+.crow small{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.bar.thin{height:4px;margin-top:8px}
+.brow{padding:8px 0}.brow div:first-child{display:flex;justify-content:space-between;font-size:14px}.brow span{color:var(--muted);font-variant-numeric:tabular-nums}
+.mh{display:flex;align-items:center;gap:6px}.mh .rb{flex:1;text-align:left;background:none;border:0;padding:4px 0}.mh .rb b{display:block;font-weight:800;font-size:15px}.mh .rb small{color:var(--muted);font-size:12.5px}
+.hint{font-size:12.5px;color:var(--muted);margin:2px 0 6px}.warn{color:var(--amber)!important;white-space:normal!important}
+.setg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.setg button{text-align:left;border:1px solid var(--border);background:var(--alt);border-radius:12px;padding:10px;font-weight:700;font-size:14px}
+.setg small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.btn.wide{width:100%;margin:4px 0 12px}
+.tag2{text-transform:none;letter-spacing:0;font-weight:600;color:var(--accent);background:var(--acsoft);padding:1px 6px;border-radius:6px;margin-left:4px}
+.qeh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.qeh b{font-size:18px}.qeh span{font-size:12.5px;color:var(--muted);font-weight:600}
+.qeamt{font-size:44px;font-weight:800;text-align:center;letter-spacing:-1px;padding:8px 0 14px;font-variant-numeric:tabular-nums}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kp button{height:56px;border-radius:14px;border:1px solid var(--border);background:var(--alt);font-size:22px;font-weight:700}
+.catg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.catg button{height:84px;border-radius:14px;border:1px solid var(--border);background:var(--alt);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:13px}
+.catg button span{font-size:28px}
+.ml{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:10px 0 6px}
+.modeg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modeg button{min-height:48px;border-radius:12px;border:1px solid var(--border);background:var(--alt);font-weight:700;font-size:14px;padding:6px 10px;text-align:left}
+.steps{padding-left:20px;line-height:1.9}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;z-index:70;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
 .toast button{background:none;border:0;color:#7fb0ff;font-weight:800}
 
 @media(max-width:760px){
   .tabs{display:none}
   .wrap{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
-  .btabs{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(15,23,42,.06)}
+  .btabs{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(15,23,42,.06)}
   .btabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
   .btabs button span{font-size:19px}
   .btabs button.on{color:var(--accent)}
   .fab{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .row .rb b{font-size:15px}
   .grid{grid-template-columns:1fr}
   .tiles{grid-template-columns:1fr 1fr}
   #clock{display:none}
@@ -182,27 +265,22 @@ button{cursor:pointer}
       <span style="flex:1"></span>
       <span class="sync" id="sync" data-s="wait" title="Connecting" role="img" aria-label="Sync status"></span>
       <button class="pill ic" id="bell" onclick="showReminders()" aria-label="Reminders">🔔<span class="badge hide" id="bellN"></span></button>
-      <button class="pill ic" onclick="go('settings')" aria-label="Settings">⚙️</button>
-      <button class="pill ic" onclick="lockNow()" aria-label="Lock">🔒</button>
+            <button class="pill ic" onclick="lockNow()" aria-label="Lock">🔒</button>
     </div>
   </header>
   <nav class="tabs" id="tabs">
-    <button data-v="home" class="on">📊 Dashboard</button>
-    <button data-v="due">🔔 Due</button>
-    <button data-v="loans">🏦 Loans</button>
-    <button data-v="cards">💳 Cards</button>
-    <button data-v="spends">🧾 Expenses</button>
+    <button data-v="pay" class="on">✅ To pay</button>
+    <button data-v="summary">📊 Summary</button>
+    <button data-v="manage">⚙️ Manage</button>
   </nav>
   <main id="app"></main>
 </div>
 <nav class="btabs" id="btabs">
-  <button data-v="home" class="on"><span>📊</span>Home</button>
-  <button data-v="due"><span>🔔</span>Due</button>
-  <button data-v="loans"><span>🏦</span>Loans</button>
-  <button data-v="cards"><span>💳</span>Cards</button>
-  <button data-v="spends"><span>🧾</span>Expenses</button>
+  <button data-v="pay" class="on"><span>✅</span>To pay</button>
+  <button data-v="summary"><span>📊</span>Summary</button>
+  <button data-v="manage"><span>⚙️</span>Manage</button>
 </nav>
-<button class="fab" onclick="addMenu()">+ Add</button>
+<button class="fab" onclick="addMenu()" aria-label="Add">＋</button>
 <div id="modal"></div>
 <script>
 /* ===== Sreeney Ledger ===== */
@@ -349,6 +427,7 @@ function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing')
 
 /* ---------- cloud sync (private to your Claude login) ---------- */
 let DB=null,COL='',pushed={},syncT=null;
+const SYNC_NOTE='Green dot = synced to your Firebase, private to rsrinivashr@gmail.com. Card numbers, bank accounts and passwords are never stored.';
 function setSync(st,t){const e=$('#sync');if(e){e.dataset.s=st;e.title=t;e.setAttribute('aria-label','Sync: '+t)}}
 function splitDocs(){
   const{notified,spends,...rest}=S;const d={v2main:JSON.stringify(rest)};
@@ -382,7 +461,7 @@ function signIn(){
     authUI(e&&e.code==='auth/unauthorized-domain'?'This site is not yet authorised in Firebase (Authentication → Settings → Authorised domains).':'Sign-in cancelled. Try again.',true);
   });
 }
-function signOut(){if(FA&&confirm('Sign out of Sreeney Ledger on this device?'))FA.signOut()}
+function signOut(){if(!FA||!confirm('Sign out and clear Sreeney Ledger from this device? Your data stays safe in Firebase.'))return;try{localStorage.removeItem(KEY)}catch(e){}FA.signOut().then(()=>location.reload())}
 function initSync(){
   if(!window.firebase){authUI('Could not load Firebase — check your internet and reload.',false);return setSync('off','Offline')}
   firebase.initializeApp(FB_CONFIG);FA=firebase.auth();const db=firebase.firestore();
@@ -468,210 +547,342 @@ function lockNow(){closeModal();pinStage=S.pin?'enter':'new';pinBuf='';pinUI();$
 pinUI();
 
 /* ---------- nav ---------- */
-let view='home',YM=ymOf(today());
+let view='pay',YM=ymOf(today()),chip='pay',Q='',showPaid=false,openSec={},mq='';
 if(YM<START)YM=START;
-function go(v){view=v;document.querySelectorAll('#tabs button,#btabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();scrollTo(0,0)}
+function go(v,c){
+  if(v==='spends'){v='pay';c='exp'}
+  if(v==='cards'||v==='loans'){v='summary'}
+  if(v==='home'||v==='due'){v='pay'}
+  if(v==='settings')v='manage';
+  view=v;if(c)chip=c;
+  document.querySelectorAll('#tabs button,#btabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  render();scrollTo(0,0);
+}
 document.querySelectorAll('#tabs button,#btabs button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 function shiftM(n){YM=addM(YM,n);render()}
 function tick(){const d=new Date();$('#clock').textContent=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 tick();setInterval(tick,15000);
-
 function render(){
   $('#mLabel').textContent=mName(YM);
-  $('#app').innerHTML=({home:vHome,due:vDue,loans:vLoans,cards:vCards,spends:vSpends,settings:vSettings})[view]();
+  const keep=document.activeElement&&document.activeElement.id;
+  $('#app').innerHTML=({pay:vPay,summary:vSummary,manage:vManage})[view]();
+  if(keep==='q'||keep==='mq'){const e=document.getElementById(keep);if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}}
   updateBell();
 }
 
-/* ---------- views ---------- */
+/* ---------- shared helpers ---------- */
+function spendsIn(ym){return S.spends.filter(s=>ymOf(s.date)===ym).sort((a,b)=>b.date.localeCompare(a.date))}
 function totals(ym){
   const all=entries(ym),inc=all.filter(x=>isIn(x.it)),out=all.filter(x=>!isIn(x.it)&&!x.it.hold);
   const sp=spendsIn(ym),cash=sp.filter(s=>!String(s.mode).startsWith('card:')).reduce((a,s)=>a+ +s.amount,0);
-  return{
-    inGot:inc.filter(x=>x.paid).reduce((a,x)=>a+x.amt,0),inExp:inc.reduce((a,x)=>a+x.amt,0),
+  return{inGot:inc.filter(x=>x.paid).reduce((a,x)=>a+x.amt,0),inExp:inc.reduce((a,x)=>a+x.amt,0),
     paid:out.filter(x=>x.paid).reduce((a,x)=>a+x.amt,0)+cash,
-    due:out.filter(x=>!x.paid).reduce((a,x)=>a+x.amt,0),dueN:out.filter(x=>!x.paid).length,
-    over:out.filter(x=>x.st==='over').length,spent:sp.reduce((a,s)=>a+ +s.amount,0)
-  };
+    due:out.filter(x=>!x.paid).reduce((a,x)=>a+x.amt,0),dueN:out.filter(x=>!x.paid).length,spent:sp.reduce((a,s)=>a+ +s.amount,0)};
 }
-function row(x){
-  return `<div class="r st-${x.st}">
-   <button class="chk" onclick="tickItem('${x.it.id}','${x.ym}')" aria-label="${x.paid?'Mark not paid':'Mark paid'}: ${esc(x.it.name)}">${x.paid?'✓':x.st==='hold'?'–':''}</button>
-   <button class="rb" onclick="openItem('${x.it.id}','${x.ym}')"><b>${esc(x.it.name)}</b><small>${sub(x)}</small></button>
-   <div class="ra"><b>${x.amt?rs(x.amt):'—'}</b><span class="chip c-${x.st}">${stLabel(x)}</span></div></div>`;
+function earlierOverdue(){const cur=ymOf(today()),r=[];for(let k=12;k>=1;k--){const ym=addM(cur,-k);if(ym<START)continue;entries(ym).forEach(x=>{if(!isIn(x.it)&&x.st==='over')r.push(x)})}return r}
+function alertsNow(){
+  const cur=ymOf(today()),r=earlierOverdue();
+  entries(cur).forEach(x=>{if(!isIn(x.it)&&(x.st==='over'||x.st==='soon'))r.push(x)});
+  entries(addM(cur,1)).forEach(x=>{if(!isIn(x.it)&&x.st==='soon')r.push(x)});
+  return r;
 }
-let openBox={};
-function box(sec){
-  const es=entries(YM,sec.k),act=es.filter(x=>!x.it.hold),hold=es.filter(x=>x.it.hold);
-  const plan=act.reduce((a,x)=>a+x.amt,0),done=act.filter(x=>x.paid).reduce((a,x)=>a+x.amt,0);
-  const inc=sec.type==='in',lim=8,isOpen=openBox[sec.k];
-  const list=[...act.filter(x=>!x.paid),...act.filter(x=>x.paid)];
-  const shown=isOpen?list:list.slice(0,lim);
-  return `<section class="box" style="--c:${sec.c}">
-   <div class="bh"><h3><span aria-hidden="true">${esc(sec.ic)}</span>${esc(sec.t)}</h3><button class="add" onclick="${sec.type==='card'?'cardForm()':`editItem(null,'${sec.k}')`}" aria-label="Add to ${esc(sec.t)}">+</button><button class="add" onclick="secForm('${sec.k}')" aria-label="Edit box ${esc(sec.t)}">⋯</button></div>
-   <div class="sum"><span>${inc?'Expected':'Budget'} <b>${rs(plan)}</b></span><span>${inc?'Received':'Paid'} <b>${rs(done)}</b></span><span>${inc?'Pending':'Left'} <b>${rs(plan-done)}</b></span></div>
-   ${shown.map(row).join('')||`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`}
-   ${list.length>lim?`<button class="more" onclick="openBox['${sec.k}']=${!isOpen};render()">${isOpen?'Show less':`Show all ${list.length}`}</button>`:''}
-   ${hold.length?`<button class="more" onclick="openBox['${sec.k}h']=${!openBox[sec.k+'h']};render()">${openBox[sec.k+'h']?'Hide':'Show'} ${hold.length} not-to-pay</button>${openBox[sec.k+'h']?hold.map(row).join(''):''}`:''}
-  </section>`;
-}
-function spendBox(){
-  const sp=spendsIn(YM),tot=sp.reduce((a,s)=>a+ +s.amount,0);
-  return `<section class="box" style="--c:#64748b"><div class="bh"><h3><span aria-hidden="true">🧾</span>Unplanned expenses</h3><button class="add" onclick="spendForm()" aria-label="Add expense">+</button></div>
-   <div class="sum"><span>Spent <b>${rs(tot)}</b></span><span>Entries <b>${sp.length}</b></span></div>
-   ${sp.slice(0,6).map(spendRow).join('')||'<div class="empty">Log card swipes, UPI and cash spends here.</div>'}
-   ${sp.length>6?`<button class="more" onclick="go('spends')">See all ${sp.length}</button>`:''}</section>`;
-}
+function lastAmt(it,ym){for(let k=1;k<=6;k++){const r=S.rec[it.id+'|'+addM(ym,-k)];if(r&&+r.amt)return +r.amt}return 0}
+function lastMode(it){return it.lastMode||it.mode||''}
+function cardUse(c,ym){const m='card:'+c.id;return spendsIn(ym).filter(s=>s.mode===m).reduce((a,s)=>a+ +s.amount,0)+entries(ym).filter(x=>x.paid&&x.r.mode===m).reduce((a,x)=>a+x.amt,0)}
+function cardYear(c){const m='card:'+c.id,from=addM(ymOf(today()),-11);let a=S.spends.filter(s=>s.mode===m&&ymOf(s.date)>=from).reduce((t,s)=>t+ +s.amount,0);
+  Object.entries(S.rec).forEach(([k,r])=>{if(r.paid&&r.mode===m&&k.split('|')[1]>=from)a+=+r.amt||0});return a}
+function waiverOf(c){if(+c.waiver)return +c.waiver;const m=/waived (?:on|after) ₹?([\d.,]+)\s*(L|K)?/i.exec(c.fee||'');if(!m)return 0;let n=parseFloat(m[1].replace(/,/g,''));if(m[2]&&m[2].toUpperCase()==='L')n*=1e5;if(m[2]&&m[2].toUpperCase()==='K')n*=1e3;return n}
+const CAT_IC={Groceries:'🛒',Fuel:'⛽',Food:'🍽️',Shopping:'🛍️',Medical:'💊',Travel:'🚕',Home:'🏠',Kids:'🎒',Gifts:'🎁',Other:'📦',Bills:'🧾',Entertainment:'🎬',Education:'📚'};
+const catIc=c=>CAT_IC[c]||'🏷️';
 const NEEDS=/confirm|add tenure|add amount|sheet showed|not in sheet|also says/i;
 function reviewList(){
   return [...S.cards.filter(c=>!c.ok&&NEEDS.test(c.note||'')).map(c=>({kind:'card',id:c.id,name:c.name+(c.last4?' ••'+c.last4:''),what:c.note,info:`Statement ${ord(c.stmt)} · pay by ${ord(c.due)}`})),
     ...S.items.filter(i=>!i.ok&&NEEDS.test(i.note||'')).map(i=>({kind:'item',id:i.id,name:i.name,what:i.note,info:[secOf(i.sec).t,+i.amt?rs(i.amt):'amount not set',`${ord(i.day)} of month`,tOf(i)==='loan'?(+i.left?i.left+' months left':'tenure not set'):''].filter(Boolean).join(' · ')}))];
 }
-function reviewBox(){
-  const L=reviewList();if(!L.length)return'';
-  return `<section class="box" style="--c:#e8590c"><div class="bh"><h3>⚠️ Please confirm (${L.length})</h3></div>
-   <div class="sub" style="color:var(--muted);font-size:12.5px;margin-bottom:4px">From your sheet — fix it, delete it, or tick ✓ if it's right.</div>
-   ${L.map(x=>`<div class="r"><div class="rb" style="cursor:default"><b>${esc(x.name)}</b><small>${esc(x.info)}</small><small style="color:var(--amber);white-space:normal">${esc(x.what)}</small></div>
-    <div style="display:flex;gap:4px;flex:none">
-     <button class="add" title="Edit" aria-label="Edit ${esc(x.name)}" onclick="${x.kind==='card'?`cardForm('${x.id}')`:`editItem('${x.id}')`}">✏️</button>
-     <button class="add" title="Delete" aria-label="Delete ${esc(x.name)}" onclick="${x.kind==='card'?`delCard('${x.id}')`:`delItem('${x.id}')`}">🗑</button>
-     <button class="add" title="Looks right" aria-label="Confirm ${esc(x.name)}" style="color:var(--green)" onclick="okReview('${x.kind}','${x.id}')">✓</button></div></div>`).join('')}</section>`;
-}
 function okReview(kind,id){const o=kind==='card'?card(id):S.items.find(i=>i.id===id);if(o){o.ok=true;save();render();toast('Confirmed',()=>{o.ok=false;save();render()})}}
-function vHome(){
-  const t=totals(YM),bal=t.inGot-t.paid;
-  return `<div class="tiles">
-   <div class="tile t-in"><div class="lb"><i>₹</i>Money in</div><b>${rs(t.inGot)}</b><small>of ${rs(t.inExp)}</small></div>
-   <div class="tile t-out"><div class="lb"><i>↑</i>Paid out</div><b>${rs(t.paid)}</b><small>${mName(YM)}</small></div>
-   <div class="tile t-due"><div class="lb"><i>!</i>Still to pay</div><b>${rs(t.due)}</b><small>${t.dueN} items${t.over?` · ${t.over} overdue`:''}</small></div>
-   <div class="tile t-bal"><div class="lb"><i>=</i>Balance</div><b>${bal<0?'−':''}${rs(Math.abs(bal))}</b><small>in − out</small></div>
-  </div>
-  ${reviewBox()}${dueWatch()}
-  <div class="grid">${S.secs.map(box).join('')}${spendBox()}</div>`;
+
+/* ---------- row (big, clean) ---------- */
+function when(x){
+  const inc=isIn(x.it);
+  if(x.paid)return `${inc?'Received':'Paid'} ${dLabel(x.r.date||x.date)}${x.r.mode?' · '+modeName(x.r.mode):''}`;
+  if(x.st==='hold')return "Don't pay";
+  if(x.n<0)return `${dLabel(x.date)} · ${-x.n} day${x.n===-1?'':'s'} ${inc?'pending':'late'}`;
+  if(x.n===0)return 'Today';if(x.n===1)return 'Tomorrow';
+  return dLabel(x.date)+(x.n<=7?` · in ${x.n} days`:'');
 }
-function alertsNow(){
-  const cur=ymOf(today()),r=[];
-  for(let k=3;k>=0;k--){const ym=addM(cur,-k);if(ym<START)continue;entries(ym).forEach(x=>{if(!isIn(x.it)&&x.st==='over')r.push(x)})}
-  [cur,addM(cur,1)].forEach(ym=>entries(ym).forEach(x=>{if(!isIn(x.it)&&x.st==='soon')r.push(x)}));
-  return r;
+function row(x){
+  const la=!x.amt&&!x.paid?lastAmt(x.it,x.ym):0;
+  return `<div class="row st-${x.st}">
+   <button class="rb" onclick="openItem('${x.it.id}','${x.ym}')"><b>${esc(x.it.name)}</b><small>${esc(when(x))}</small></button>
+   <div class="ra"><b>${x.amt?rs(x.amt):la?'<span class="ghost">~'+rs(la)+'</span>':'<span class="ghost">Enter</span>'}</b></div>
+   <button class="tk" onclick="tickItem('${x.it.id}','${x.ym}')" aria-label="${x.paid?'Undo':'Mark paid'}: ${esc(x.it.name)}">${x.paid?'✓':''}</button></div>`;
 }
-function dueWatch(){
-  const a=alertsNow();
-  return `<section class="box" style="--c:#c9860f"><div class="bh"><h3><span aria-hidden="true">👁️</span>Due watch</h3><button class="btn lnk" onclick="go('due')">All dues</button></div>
-   ${a.slice(0,6).map(row).join('')||'<div class="empty">Nothing overdue or due in the next few days. 👍</div>'}
-   ${a.length>6?`<button class="more" onclick="go('due')">See all ${a.length}</button>`:''}</section>`;
-}
-function vDue(){
-  const es=entries(YM).filter(x=>!isIn(x.it)&&!x.it.hold);
-  const cur=ymOf(today()),prev=[];
-  if(YM===cur)for(let k=3;k>=1;k--){const ym=addM(cur,-k);if(ym>=START)entries(ym).forEach(x=>{if(!isIn(x.it)&&x.st==='over')prev.push(x)})}
-  const g=s=>es.filter(x=>x.st===s);
-  const sec=(t,c,a)=>a.length?`<section class="box" style="--c:${c}"><div class="bh"><h3>${t}</h3></div><div class="sum"><span>Total <b>${rs(a.reduce((s,x)=>s+x.amt,0))}</b></span><span>Items <b>${a.length}</b></span></div>${a.map(row).join('')}</section>`:'';
-  return sec('Overdue from earlier months','#c81e3a',prev)+sec('Overdue','#c81e3a',g('over'))+sec('Due soon','#c9860f',g('soon'))+sec('Upcoming','#1a63e8',g('up'))+sec('Paid','#0f7a3d',g('paid'))||'<div class="empty">Nothing scheduled.</div>';
-}
-function vLoans(){
-  const cur=YM,ls=S.items.filter(i=>tOf(i)==='loan');
-  const act=ls.filter(i=>occurs(i,cur));
-  const emi=act.reduce((a,i)=>a+ +i.amt,0);
-  const pend=act.reduce((a,i)=>{const l=loanLeft(i,cur);return a+(l!=null?l*(+i.amt||0):0)},0);
-  const lastEnd=act.map(loanEnd).filter(Boolean).sort().pop();
-  const list=ls.slice().sort((a,b)=>(loanEnd(a)||'9999').localeCompare(loanEnd(b)||'9999'));
-  return `<div class="tiles">
-   <div class="tile t-out"><div class="lb"><i>#</i>Active loans</div><b>${act.length}</b><small>${mName(cur)}</small></div>
-   <div class="tile t-due"><div class="lb"><i>₹</i>EMI / month</div><b>${rs(emi)}</b><small>all loans</small></div>
-   <div class="tile t-bal"><div class="lb"><i>Σ</i>EMIs left</div><b>${rs(pend)}</b><small>EMI × months left</small></div>
-   <div class="tile t-in"><div class="lb"><i>✓</i>Debt-free</div><b>${lastEnd?mName(lastEnd):'—'}</b><small>last EMI</small></div>
-  </div>
-  <section class="box" style="--c:#c81e3a"><div class="bh"><h3>🏦 All loans</h3><button class="add" onclick="editItem(null,(S.secs.find(x=>x.type==='loan')||{}).k)" aria-label="Add loan">+</button></div>
-  ${list.map(i=>{const x=occurs(i,cur)?entry(i,cur):null,l=loanLeft(i,cur),e=loanEnd(i);
-    return `<div class="r ${x?'st-'+x.st:''}">
-     ${x?`<button class="chk" onclick="tickItem('${i.id}','${cur}')" aria-label="Mark paid">${x.paid?'✓':''}</button>`:'<span class="chk" style="opacity:.4"></span>'}
-     <button class="rb" onclick="${x?`openItem('${i.id}','${cur}')`:`editItem('${i.id}')`}"><b>${esc(i.name)}</b>
-     <small>${esc([`${ord(i.day)} of month`,i.roi?i.roi+'%':'',l!=null?`${l} months left`:'tenure not set',e?'ends '+mName(e):'',i.mode].filter(Boolean).join(' · '))}</small></button>
-     <div class="ra"><b>${+i.amt?rs(i.amt):'—'}</b>${x?`<span class="chip c-${x.st}">${stLabel(x)}</span>`:`<span class="chip c-paid">${e&&e<cur?'Closed':'Not active'}</span>`}</div></div>`}).join('')||'<div class="empty">No loans yet.</div>'}
+function plainRow(it){return `<div class="row"><button class="rb" onclick="editItem('${it.id}')"><b>${esc(it.name)}</b><small>${esc(secOf(it.sec).t)} · not due in ${mName(YM)}</small></button><div class="ra"><b>${+it.amt?rs(it.amt):'—'}</b></div><button class="tk ed" onclick="editItem('${it.id}')" aria-label="Edit">✏️</button></div>`}
+function spendRow(s){return `<div class="row"><span class="cic" aria-hidden="true">${catIc(s.cat)}</span><button class="rb" onclick="spendForm('${s.id}')"><b>${esc(s.desc||s.cat)}</b><small>${esc([dLabel(s.date),modeName(s.mode)].join(' · '))}</small></button><div class="ra"><b>${rs(s.amount)}</b></div></div>`}
+
+/* ---------- screen 1: To pay ---------- */
+const CHIPS=[['pay','All payments'],['card','Cards'],['loan','Loans'],['bill','Bills'],['in','Income'],['exp','Expenses']];
+function kindOf(it){const t=tOf(it);return t==='in'?'in':t==='card'?'card':t==='loan'?'loan':'bill'}
+function matchChip(it){return chip==='pay'?!isIn(it):kindOf(it)===chip}
+function salaryCheck(){
+  const cur=ymOf(today());if(YM!==cur)return'';
+  const ins=S.items.filter(i=>isIn(i)&&!i.hold&&i.freq==='monthly');
+  const sal=ins.find(i=>/salary/i.test(i.name))||ins.slice().sort((a,b)=>b.amt-a.amt)[0];if(!sal)return'';
+  let nd=null;for(const ym of [cur,addM(cur,1),addM(cur,2)]){if(!occurs(sal,ym))continue;const e=entry(sal,ym);if(!e.paid&&e.date>=today()){nd=e.date;break}}
+  if(!nd)return'';
+  const seen={},due=[...earlierOverdue(),...entries(cur),...entries(addM(cur,1))].filter(x=>!isIn(x.it)&&!x.it.hold&&!x.paid&&x.date<=nd&&!seen[x.key]&&(seen[x.key]=1));
+  const sum=due.reduce((a,x)=>a+(x.amt||lastAmt(x.it,x.ym)),0),unk=due.filter(x=>!x.amt&&!lastAmt(x.it,x.ym)).length;
+  const c=S.cash,left=c?c.amt-sum:null;
+  return `<section class="salc ${left==null?'':left>=0?'ok':'short'}">
+   <div><span>Due before salary (${dLabel(nd)})</span><b>${rs(sum)}</b><small>${due.length} payments${unk?` · ${unk} amounts not entered`:''}</small></div>
+   <button onclick="cashForm()"><span>In bank</span><b>${c?rs(c.amt):'Tap to add'}</b><small>${c?'updated '+dLabel(c.date):'your balance'}</small></button>
+   ${left!=null?`<div class="verdict">${left>=0?`✓ Covered · ₹${Math.round(left).toLocaleString('en-IN')} spare`:`⚠ Short by ₹${Math.round(-left).toLocaleString('en-IN')}`}</div>`:''}
   </section>`;
 }
-function cardUse(c,ym){const m='card:'+c.id;return spendsIn(ym).filter(s=>s.mode===m).reduce((a,s)=>a+ +s.amount,0)+entries(ym).filter(x=>x.paid&&x.r.mode===m).reduce((a,x)=>a+x.amt,0)}
-function vCards(){
-  const bills=entries(YM).filter(x=>tOf(x.it)==='card'),totLim=S.cards.reduce((a,c)=>a+(+c.limit||0),0);
-  const unpaid=bills.filter(x=>!x.paid),dueAmt=unpaid.reduce((a,x)=>a+x.amt,0);
-  return `<div class="tiles">
-   <div class="tile t-bal"><div class="lb"><i>#</i>Cards</div><b>${S.cards.length}</b><small>total limit ${rs(totLim)}</small></div>
-   <div class="tile t-due"><div class="lb"><i>!</i>Bills unpaid</div><b>${unpaid.length}</b><small>${rs(dueAmt)} entered</small></div>
-   <div class="tile t-out"><div class="lb"><i>↑</i>Swiped</div><b>${rs(S.cards.reduce((a,c)=>a+cardUse(c,YM),0))}</b><small>${mName(YM)}</small></div>
-   <div class="tile t-in"><div class="lb"><i>✓</i>Bills paid</div><b>${bills.filter(x=>x.paid).length}</b><small>of ${bills.length}</small></div>
-  </div>
-  <div class="grid">${S.cards.map(c=>{const b=bills.find(x=>x.it.cardId===c.id),u=cardUse(c,YM);
-   return `<section class="box" style="--c:${b&&b.st==='over'?'#c81e3a':b&&b.paid?'#0f7a3d':'#1a63e8'}">
-    <div class="bh"><h3>💳 ${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</h3><button class="btn lnk" onclick="cardForm('${c.id}')">Edit</button></div>
-    ${b?row(b):''}
-    <div class="mini"><div><span>Limit</span><b>${+c.limit?rs(c.limit):'Shared'}</b></div><div><span>Statement</span><b>${ord(c.stmt)}</b></div><div><span>Pay by</span><b>${ord(c.due)}</b></div></div>
-    <div class="sum" style="margin-top:8px"><span>Swiped this month <b>${rs(u)}</b></span></div>
-    ${+c.limit?`<div class="bar"><i style="width:${Math.min(u/c.limit*100,100)}%"></i></div>`:''}
-    ${c.fee?`<div class="empty">Fee: ${esc(c.fee)}</div>`:''}${c.note?`<div class="empty">${esc(c.note)}</div>`:''}
-   </section>`}).join('')}
-   <section class="box"><div class="bh"><h3>➕ New card</h3></div><button class="btn pri" onclick="cardForm()">Add a credit card</button></section></div>`;
+function cashForm(){openModal(`<h2>Money in bank</h2><div class="sub">Total you have right now across accounts. Used for the "before salary" check.</div>
+  <div class="f"><label>Amount (₹)</label><input type="number" inputmode="decimal" id="cb" value="${S.cash?S.cash.amt:''}"></div>
+  <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="S.cash={amt:+val('cb')||0,date:today()};save();closeModal();render()">Save</button></div>`)}
+function vPay(){
+  const t=totals(YM),cur=ymOf(today()),rv=reviewList().length;
+  const top=`<section class="sumbar">
+    <div><span>Came in</span><b class="in">${rs(t.inGot)}</b></div>
+    <div><span>Paid out</span><b class="out">${rs(t.paid)}</b></div>
+    <div><span>Still to pay</span><b class="due">${rs(t.due)}</b></div></section>`;
+  const chips=`<div class="chips">${CHIPS.map(([k,l])=>`<button class="${chip===k?'on':''}" onclick="chip='${k}';showPaid=false;render()">${l}</button>`).join('')}</div>
+   <div class="search"><span aria-hidden="true">🔍</span><input id="q" placeholder="Search bills, loans, cards" value="${esc(Q)}" oninput="Q=this.value;render()" aria-label="Search">${Q?`<button onclick="Q='';render()" aria-label="Clear">✕</button>`:''}</div>`;
+  let body='';
+  if(Q.trim()){
+    const q=Q.trim().toLowerCase(),its=S.items.filter(i=>[i.name,i.note,i.ref,i.place,secOf(i.sec).t].join(' ').toLowerCase().includes(q));
+    const sps=S.spends.filter(s=>[s.desc,s.cat,modeName(s.mode)].join(' ').toLowerCase().includes(q)).slice(0,20);
+    body=`<section class="list">${its.map(i=>occurs(i,YM)?row(entry(i,YM)):plainRow(i)).join('')}${sps.map(spendRow).join('')}${!its.length&&!sps.length?'<div class="empty">No matches.</div>':''}</section>`;
+  }else if(chip==='exp'){
+    const sp=spendsIn(YM),tot=sp.reduce((a,s)=>a+ +s.amount,0);
+    body=`<section class="list"><div class="gh">${sp.length} expenses · ${rs(tot)}<button class="btn lnk" onclick="quickExpense()">+ Add</button></div>${sp.map(spendRow).join('')||'<div class="empty">Log card swipes, UPI and cash here. Tap + to add.</div>'}</section>`;
+  }else{
+    const inc=chip==='in',es=entries(YM).filter(x=>matchChip(x.it)&&(!x.it.hold||S.showHold));
+    const early=!inc&&YM===cur?earlierOverdue().filter(x=>matchChip(x.it)):[];
+    const g=f=>es.filter(f);
+    const over=g(x=>!x.paid&&x.st!=='hold'&&x.n<0),wk=g(x=>!x.paid&&x.st!=='hold'&&x.n>=0&&x.n<=7),later=g(x=>!x.paid&&x.st!=='hold'&&x.n>7),paid=g(x=>x.paid),hold=g(x=>x.st==='hold');
+    const grp=(t,cls,a)=>a.length?`<div class="gh ${cls}">${t}<span>${rs(a.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0))}</span></div>${a.map(row).join('')}`:'';
+    body=`<section class="list">
+      ${grp('From earlier months','r',early)}${grp(inc?'Late':'Overdue','r',over)}${grp(inc?'Expected this week':'Due this week','a',wk)}${grp('Later this month','',later)}
+      ${paid.length?`<button class="gh g fold" onclick="showPaid=!showPaid;render()">${inc?'Received':'Paid'} · ${paid.length}<span>${rs(paid.reduce((s,x)=>s+x.amt,0))} ${showPaid?'▴':'▾'}</span></button>${showPaid?paid.map(row).join(''):''}`:''}
+      ${hold.length?`<div class="gh">Don't pay · ${hold.length}</div>${hold.map(row).join('')}`:''}
+      ${!early.length&&!es.length?`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`:''}
+    </section>`;
+  }
+  return top+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body;
 }
-function spendsIn(ym){return S.spends.filter(s=>ymOf(s.date)===ym).sort((a,b)=>b.date.localeCompare(a.date))}
-function spendRow(s){return `<div class="r"><span class="chk" style="background:${s.kind==='Ad hoc'?'var(--asoft)':'var(--acsoft)'};border-color:transparent"></span>
-  <button class="rb" onclick="spendForm('${s.id}')"><b>${esc(s.desc||s.cat)}</b><small>${esc([dLabel(s.date),s.cat,s.kind,modeName(s.mode)].join(' · '))}</small></button>
-  <div class="ra"><b>${rs(s.amount)}</b></div></div>`}
-function vSpends(){
-  const sp=spendsIn(YM),tot=sp.reduce((a,s)=>a+ +s.amount,0),by={},cat={};
-  sp.forEach(s=>{const k=modeName(s.mode);by[k]=(by[k]||0)+ +s.amount;cat[s.cat]=(cat[s.cat]||0)+ +s.amount});
-  const bars=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="r"><div class="rb"><b>${esc(k)}</b><div class="bar"><i style="width:${v/tot*100}%"></i></div></div><div class="ra"><b>${rs(v)}</b></div></div>`).join('')||'<div class="empty">Nothing yet.</div>';
-  return `<div class="grid"><section class="box" style="--c:#64748b"><div class="bh"><h3>🧾 Expenses · ${mName(YM)}</h3><button class="add" onclick="spendForm()" aria-label="Add expense">+</button></div>
-   <div class="sum"><span>Total <b>${rs(tot)}</b></span><span>Entries <b>${sp.length}</b></span></div>${sp.map(spendRow).join('')||'<div class="empty">No expenses logged.</div>'}</section>
-   <div><section class="box"><div class="bh"><h3>Paid using</h3></div>${bars(by)}</section><section class="box" style="--c:#c9860f"><div class="bh"><h3>By category</h3></div>${bars(cat)}</section></div></div>`;
+
+/* ---------- screen 2: Summary ---------- */
+function monthNums(ym){const t=totals(ym);return{inn:t.inGot,out:t.paid,saved:t.inGot-t.paid}}
+function trend(a,b,goodUp){if(b==null)return'';const d=a-b;if(!d)return'<em>same as last month</em>';const up=d>0,good=goodUp?up:!up;return `<em class="${good?'gd':'bd'}">${up?'↑':'↓'} ${rs(Math.abs(d))} vs last month</em>`}
+function chart(){
+  const months=[];for(let k=11;k>=0;k--){const ym=addM(YM,-k);if(ym>=START)months.push(ym)}
+  const data=months.map(m=>monthNums(m)),mx=Math.max(1,...data.map(d=>Math.max(d.inn,d.out)));
+  const W=600,H=170,bw=Math.min(22,W/months.length/3);
+  const bars=months.map((m,i)=>{const cx=(i+.5)*W/months.length,d=data[i],hi=d.inn/mx*130,ho=d.out/mx*130;
+    return `<rect x="${cx-bw-1}" y="${140-hi}" width="${bw}" height="${hi}" rx="3" fill="var(--green)"/><rect x="${cx+1}" y="${140-ho}" width="${bw}" height="${ho}" rx="3" fill="var(--red)"/><text x="${cx}" y="160" text-anchor="middle" font-size="12" fill="var(--muted)">${MN[+m.slice(5)-1]}</text>`}).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Money in and out by month" style="width:100%;height:auto"><line x1="0" y1="140" x2="${W}" y2="140" stroke="var(--border)"/>${bars}</svg>
+   <div class="legend"><span><i style="background:var(--green)"></i>Came in</span><span><i style="background:var(--red)"></i>Paid out</span>${months.length<3?'<span>Builds up month by month</span>':''}</div>`;
 }
-function vSettings(){
-  return `<section class="box"><div class="bh"><h3>⚙️ Settings</h3></div><div class="acts" style="justify-content:flex-start">
-   <button class="btn" onclick="enableNotif()">Turn on phone alerts</button>
-   <button class="btn" onclick="remindForm()">🔔 Alert: ${S.remind??1} day${(S.remind??1)==1?'':'s'} before</button>
-   <button class="btn" onclick="modesForm()">Payment modes</button>
-   <button class="btn" onclick="catsForm()">Expense categories</button>
-   <button class="btn" onclick="changePin()">Change PIN</button>
-   <button class="btn dng" onclick="signOut()">Sign out</button></div></section>
-  <section class="box" style="--c:#1a63e8"><div class="bh"><h3>🗂️ Boxes</h3><button class="add" onclick="secForm()" aria-label="New box">+</button></div>
-   ${S.secs.map(x=>`<div class="r"><span class="chk" style="border-color:${x.c}"></span><button class="rb" onclick="secForm('${x.k}')"><b>${esc(x.ic+' '+x.t)}</b><small>${esc(TYPES.find(t=>t[0]===x.type)[1])} · ${S.items.filter(i=>i.sec===x.k).length} items</small></button><button class="btn lnk" onclick="secForm('${x.k}')">Edit</button></div>`).join('')}</section>
-  <section class="box" style="--c:#0f9488"><div class="bh"><h3>💾 Data</h3></div><div class="acts" style="justify-content:flex-start">
-   <button class="btn" onclick="exportJSON()">Back up</button>
-   <button class="btn" onclick="$('#imp').click()">Restore backup</button>
-   <button class="btn" onclick="exportCSV()">Export month (CSV)</button>
-   <button class="btn dng" onclick="resetSeed()">Reset to sheet data</button></div>
-   <input type="file" id="imp" accept=".json" class="hide" onchange="importJSON(this.files[0])">
-   <p class="empty">Green dot in the header = synced to Firebase, private to ${OWNER}. Card and bank account numbers are never stored — only last 4 digits and bill service numbers.</p></section>`;
+function loanInsights(){
+  const ls=S.items.filter(i=>tOf(i)==='loan'&&occurs(i,YM)&&!i.hold);if(!ls.length)return'';
+  const emi=ls.reduce((a,i)=>a+ +i.amt,0),ends=ls.map(i=>[i,loanEnd(i)]).filter(x=>x[1]);
+  const next=ends.slice().sort((a,b)=>a[1].localeCompare(b[1]))[0],last=ends.slice().sort((a,b)=>b[1].localeCompare(a[1]))[0];
+  const hi=ls.filter(i=>+i.roi).sort((a,b)=>b.roi-a.roi)[0];
+  const left=ls.reduce((a,i)=>{const l=loanLeft(i,YM);return a+(l!=null?l*(+i.amt||0):0)},0);
+  const mLeft=last?mdiff(ymOf(today()),last[1])+1:null;
+  return `<section class="card2" style="--c:#c81e3a"><h3>🏦 Loans</h3>
+   <div class="kv"><div><span>EMI / month</span><b>${rs(emi)}</b></div><div><span>EMIs left</span><b>${rs(left)}</b></div></div>
+   ${last?`<div class="ins"><b>🎯 Debt-free in ${mLeft} months</b><small>Last EMI ${mName(last[1])} · ${esc(last[0].name)}</small></div>`:''}
+   ${next?`<div class="ins"><b>✅ Next to close: ${esc(next[0].name)}</b><small>${mName(next[1])} · frees up ${rs(next[0].amt)}/month</small></div>`:''}
+   ${hi?`<div class="ins"><b>💡 Prepay first: ${esc(hi.name)}</b><small>Highest interest at ${hi.roi}% — extra money here saves the most</small></div>`:''}
+   <button class="more" onclick="openSec.loans=!openSec.loans;render()">${openSec.loans?'Hide':'All '+ls.length+' loans'}</button>
+   ${openSec.loans?ls.slice().sort((a,b)=>(loanEnd(a)||'9').localeCompare(loanEnd(b)||'9')).map(i=>{const l=loanLeft(i,YM),e=loanEnd(i);return `<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${l!=null?l+' months left · ends '+mName(e):'tenure not set'}${i.roi?' · '+i.roi+'%':''}</small></button><div class="ra"><b>${rs(i.amt)}</b></div></div>`}).join(''):''}
+  </section>`;
+}
+function cardInsights(){
+  if(!S.cards.length)return'';
+  const rows=S.cards.map(c=>{const u=cardUse(c,YM),pc=+c.limit?u/c.limit:0,w=waiverOf(c),yr=w?cardYear(c):0;
+    const b=entries(YM).find(x=>x.it.cardId===c.id);
+    return `<div class="crow"><div class="ct"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><span>${b?(b.paid?'<em class="gd">Bill paid</em>':`Bill due ${dLabel(b.date)}`):''}</span></div>
+     ${+c.limit?`<div class="bar"><i style="width:${Math.min(pc*100,100)}%;background:${pc>.3?'var(--red)':'var(--accent)'}"></i></div><small>${rs(u)} of ${rs(c.limit)} used${pc>.3?` · <em class="bd">${Math.round(pc*100)}% — above 30%</em>`:''}</small>`:`<small>${rs(u)} used · shared limit</small>`}
+     ${w?`<div class="bar thin"><i style="width:${Math.min(yr/w*100,100)}%;background:var(--green)"></i></div><small>Fee waiver: ${rs(yr)} of ${rs(w)} spent in 12 months${yr>=w?' · <em class="gd">waived ✓</em>':` · ${rs(w-yr)} to go`}</small>`:''}
+    </div>`}).join('');
+  const hot=S.cards.filter(c=>+c.limit&&cardUse(c,YM)/c.limit>.3).length;
+  return `<section class="card2" style="--c:#1a63e8"><h3>💳 Cards${hot?` <em class="bd">· ${hot} above 30%</em>`:''}</h3>${rows}</section>`;
+}
+function vSummary(){
+  const a=monthNums(YM),pm=addM(YM,-1),b=pm>=START?monthNums(pm):null,t=totals(YM);
+  const boxes=S.secs.filter(s=>s.type!=='in').map(s=>{const es=entries(YM,s.k).filter(x=>!x.it.hold),plan=es.reduce((p,x)=>p+(x.amt||lastAmt(x.it,x.ym)),0),done=es.filter(x=>x.paid).reduce((p,x)=>p+x.amt,0);
+    return es.length?`<div class="brow"><div><b>${esc(s.ic)} ${esc(s.t)}</b><span>${rs(done)} / ${rs(plan)}</span></div><div class="bar"><i style="width:${plan?Math.min(done/plan*100,100):0}%;background:${s.c}"></i></div></div>`:''}).join('');
+  const cats={};spendsIn(YM).forEach(s=>cats[s.cat]=(cats[s.cat]||0)+ +s.amount);
+  return `<section class="report" id="report">
+    <div class="rh"><b>${mName(YM)}</b><button class="btn lnk w" onclick="shareReport()">Share ↗</button></div>
+    <div class="rg">
+     <div><span>Came in</span><b>${rs(a.inn)}</b>${trend(a.inn,b&&b.inn,true)}</div>
+     <div><span>Went out</span><b>${rs(a.out)}</b>${trend(a.out,b&&b.out,false)}</div>
+     <div class="sv"><span>${a.saved>=0?'Saved':'Overspent'}</span><b>${rs(Math.abs(a.saved))}</b>${trend(a.saved,b&&b.saved,true)}</div>
+    </div>
+    <small>${rs(t.due)} still to pay this month</small>
+  </section>
+  <section class="card2"><h3>📊 Last 12 months</h3>${chart()}</section>
+  ${loanInsights()}${cardInsights()}
+  <section class="card2" style="--c:#c9860f"><h3>🗂️ Paid by box</h3>${boxes||'<div class="empty">Nothing due.</div>'}</section>
+  ${Object.keys(cats).length?`<section class="card2" style="--c:#64748b"><h3>🧾 Expenses by category</h3>${Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<div class="row"><span class="cic">${catIc(k)}</span><div class="rb"><b>${esc(k)}</b></div><div class="ra"><b>${rs(v)}</b></div></div>`).join('')}</section>`:''}`;
+}
+function shareReport(){
+  const a=monthNums(YM),pm=addM(YM,-1),b=pm>=START?monthNums(pm):null,t=totals(YM);
+  const c=document.createElement('canvas');c.width=1080;c.height=1080;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,1080,1080);g.addColorStop(0,'#1a63e8');g.addColorStop(1,'#123fae');x.fillStyle=g;x.fillRect(0,0,1080,1080);
+  x.fillStyle='#fff';x.font='800 54px Inter, Arial';x.fillText('Sreeney Ledger',80,130);x.font='500 40px Inter, Arial';x.globalAlpha=.85;x.fillText(mName(YM)+' summary',80,195);x.globalAlpha=1;
+  const box=(y,label,val,diff,goodUp)=>{x.fillStyle='rgba(255,255,255,.12)';x.beginPath();x.roundRect?x.roundRect(80,y,920,200,28):x.rect(80,y,920,200);x.fill();
+    x.fillStyle='#fff';x.font='600 36px Inter, Arial';x.globalAlpha=.85;x.fillText(label,120,y+66);x.globalAlpha=1;x.font='800 72px Inter, Arial';x.fillText(rs(val),120,y+150);
+    if(diff!=null&&diff!==0){const up=diff>0,good=goodUp?up:!up;x.font='600 34px Inter, Arial';x.fillStyle=good?'#86efac':'#fca5a5';x.textAlign='right';x.fillText((up?'↑ ':'↓ ')+rs(Math.abs(diff))+' vs last month',960,y+150);x.textAlign='left'}};
+  box(270,'Came in',a.inn,b?a.inn-b.inn:null,true);box(500,'Went out',a.out,b?a.out-b.out:null,false);box(730,a.saved>=0?'Saved':'Overspent',Math.abs(a.saved),b?a.saved-b.saved:null,true);
+  x.fillStyle='#fff';x.globalAlpha=.85;x.font='500 32px Inter, Arial';x.fillText(rs(t.due)+' still to pay',80,1010);x.globalAlpha=1;
+  c.toBlob(async bl=>{const f=new File([bl],`sreeney-ledger-${YM}.png`,{type:'image/png'});
+    try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Sreeney Ledger '+mName(YM)});return}}catch(e){if(e&&e.name==='AbortError')return}
+    const u=URL.createObjectURL(bl),l=document.createElement('a');l.href=u;l.download=f.name;l.click();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Report image saved');},'image/png');
+}
+
+/* ---------- screen 3: Manage ---------- */
+function secTodo(){
+  S.secTodo=S.secTodo||{};const d=S.secTodo;
+  const L=[['g2','Turn on Google 2-step verification','myaccount.google.com → Security → 2-Step Verification',!!d.g2],
+    ['pin','Change the default PIN 123456','Tap to change now',S.pin!==DEF_PIN],
+    ['bk','Keep backup files private','Store .json backups in a safe folder, not shared drives',!!d.bk],
+    ['so','Sign out on shared computers','Manage → Data → Sign out',!!d.so]];
+  const done=L.filter(x=>x[3]).length;if(done===L.length)return'';
+  return `<section class="card2" style="--c:#c81e3a"><h3>🔐 Security to-do · ${done} of ${L.length} done</h3>
+   ${L.map(([k,t,h,ok])=>`<div class="row ${ok?'st-paid':''}"><button class="rb" onclick="${k==='pin'?'changePin()':`S.secTodo.${k}=!S.secTodo.${k};save();render()`}"><b>${t}</b><small>${h}</small></button>
+    <button class="tk" ${k==='pin'?'disabled':''} onclick="S.secTodo.${k}=!S.secTodo.${k};save();render()" aria-label="${ok?'Mark not done':'Mark done'}: ${t}">${ok?'✓':''}</button></div>`).join('')}</section>`;
+}
+function vManage(){
+  const q=mq.trim().toLowerCase(),rv=reviewList();
+  const match=i=>!q||[i.name,i.note,i.ref,i.place].join(' ').toLowerCase().includes(q);
+  const secs=S.secs.map(s=>{const its=S.items.filter(i=>i.sec===s.k&&match(i)),open=openSec[s.k]||!!q;
+    if(q&&!its.length)return'';
+    return `<section class="card2" style="--c:${s.c}"><div class="mh"><button class="rb" onclick="openSec['${s.k}']=!openSec['${s.k}'];render()"><b>${esc(s.ic)} ${esc(s.t)}</b><small>${its.length} items ${open?'▴':'▾'}</small></button>
+     <button class="tk ed" onclick="${s.type==='card'?'cardForm()':`editItem(null,'${s.k}')`}" aria-label="Add to ${esc(s.t)}">＋</button><button class="tk ed" onclick="secForm('${s.k}')" aria-label="Edit box">⋯</button></div>
+     ${open?its.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc([+i.amt?rs(i.amt):'Varies',i.freq==='once'?dLabel(i.date||today()):i.freq==='months'?(i.months||[]).map(m=>MN[m-1]).join(', '):ord(i.day)+' monthly',i.hold?"Don't pay":''].filter(Boolean).join(' · '))}</small></button>
+       <button class="tk ed" onclick="editItem('${i.id}')" aria-label="Edit ${esc(i.name)}">✏️</button><button class="tk ed" onclick="delItem('${i.id}')" aria-label="Delete ${esc(i.name)}">🗑</button></div>`).join('')||'<div class="empty">No items yet.</div>':''}
+    </section>`}).join('');
+  const cards=S.cards.filter(c=>!q||(c.name+' '+(c.note||'')).toLowerCase().includes(q));
+  return `<div class="search"><span aria-hidden="true">🔍</span><input id="mq" placeholder="Find anything to edit" value="${esc(mq)}" oninput="mq=this.value;render()" aria-label="Search">${mq?`<button onclick="mq='';render()" aria-label="Clear">✕</button>`:''}</div>
+  ${q?'':secTodo()}
+  ${rv.length&&!q?`<section class="card2" style="--c:#e8590c"><h3>⚠️ Please check (${rv.length})</h3><div class="hint">From your sheet. Fix it, delete it, or tick ✓ if it's right.</div>
+   ${rv.map(x=>`<div class="row"><div class="rb"><b>${esc(x.name)}</b><small>${esc(x.info)}</small><small class="warn">${esc(x.what)}</small></div>
+    <button class="tk ed" onclick="${x.kind==='card'?`cardForm('${x.id}')`:`editItem('${x.id}')`}" aria-label="Edit">✏️</button><button class="tk ed" onclick="${x.kind==='card'?`delCard('${x.id}')`:`delItem('${x.id}')`}" aria-label="Delete">🗑</button><button class="tk okb" onclick="okReview('${x.kind}','${x.id}')" aria-label="Looks right">✓</button></div>`).join('')}</section>`:''}
+  <section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b><small>${S.cards.length} cards</small></div><button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button></div>
+   ${cards.map(c=>`<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Statement ${ord(c.stmt)} · pay by ${ord(c.due)}${+c.limit?' · '+rs(c.limit):''}</small></button><button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete">🗑</button></div>`).join('')}</section>
+  ${secs}
+  ${q?'':`<button class="btn wide" onclick="secForm()">＋ New box</button>
+  <section class="card2" style="--c:#64748b"><h3>⚙️ Settings</h3><div class="setg">
+   <button onclick="remindForm()">🔔 Alerts<small>${(S.remind??1)?(S.remind??1)+' day before':'On the due day'}</small></button>
+   <button onclick="changePin()">🔒 Change PIN<small>6 digits</small></button>
+   <button onclick="installApp()">📲 Install app<small>Home screen icon</small></button>
+   <button onclick="enableNotif()">📣 Phone alerts<small>While app is open</small></button>
+   <button onclick="modesForm()">💸 Payment modes<small>${S.modes.length} modes</small></button>
+   <button onclick="catsForm()">🏷️ Expense categories<small>${S.cats.length} categories</small></button>
+   <button onclick="S.showHold=!S.showHold;save();render()">🚫 Don't-pay items<small>${S.showHold?'Shown':'Hidden'}</small></button>
+   <button onclick="cashForm()">🏦 Money in bank<small>${S.cash?rs(S.cash.amt):'Not set'}</small></button>
+  </div></section>
+  <section class="card2" style="--c:#0f9488"><h3>💾 Data</h3><div class="setg">
+   <button onclick="exportJSON()">⬇️ Back up<small>Download a copy</small></button>
+   <button onclick="$('#imp').click()">⬆️ Restore<small>From a backup</small></button>
+   <button onclick="exportCSV()">📄 Export month<small>CSV for sheets</small></button>
+   <button onclick="resetSeed()">↺ Reset<small>Back to sheet data</small></button>
+   ${typeof signOut==='function'?'<button onclick="signOut()">🚪 Sign out<small>Clears this device</small></button>':''}
+  </div><input type="file" id="imp" accept=".json" class="hide" onchange="importJSON(this.files[0])">
+  <div class="hint">${SYNC_NOTE}</div></section>`}`;
+}
+
+/* ---------- install as app ---------- */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e});
+function makeIcon(sz){const c=document.createElement('canvas');c.width=c.height=sz;const x=c.getContext('2d');const g=x.createLinearGradient(0,0,sz,sz);g.addColorStop(0,'#1a63e8');g.addColorStop(1,'#123fae');x.fillStyle=g;x.fillRect(0,0,sz,sz);x.fillStyle='#fff';x.font=`800 ${sz*.42}px Inter, Arial`;x.textAlign='center';x.textBaseline='middle';x.fillText('SL',sz/2,sz/2+sz*.02);x.fillStyle='#ffd59e';x.beginPath();x.arc(sz*.78,sz*.24,sz*.07,0,7);x.fill();return c.toDataURL('image/png')}
+function setupPWA(){
+  try{
+    const i192=makeIcon(192),i512=makeIcon(512);
+    const a=document.createElement('link');a.rel='apple-touch-icon';a.href=makeIcon(180);document.head.appendChild(a);
+    const f=document.createElement('link');f.rel='icon';f.href=i192;document.head.appendChild(f);
+    const m={name:'Sreeney Ledger',short_name:'Ledger',start_url:location.href.split('#')[0],scope:location.href.replace(/[^/]*$/,''),display:'standalone',background_color:'#f4f6fb',theme_color:'#1a63e8',icons:[{src:i192,sizes:'192x192',type:'image/png'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+    const l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));document.head.appendChild(l);
+  }catch(e){}
+}
+function installApp(){
+  if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>installEvt=null);return}
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  openModal(`<h2>Install as an app</h2><div class="sub">Opens full screen with its own icon.</div>
+   ${ios?'<ol class="steps"><li>Open this page in <b>Safari</b></li><li>Tap the <b>Share</b> button (square with arrow)</li><li>Tap <b>Add to Home Screen</b> → <b>Add</b></li></ol>':'<ol class="steps"><li>Open this page in <b>Chrome</b></li><li>Tap the <b>⋮ menu</b> (top right)</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b></li></ol>'}
+   <div class="acts"><button class="btn pri" onclick="closeModal()">Got it</button></div>`);
+}
+setupPWA();
+
+/* ---------- 3-tap expense ---------- */
+let QE=null;
+function quickExpense(){QE={amt:'',cat:null,desc:'',date:today()};qeStep1()}
+function qeKeys(){return ['1','2','3','4','5','6','7','8','9','00','0','⌫'].map(k=>`<button onclick="qeKey('${k}')" aria-label="${k==='⌫'?'Delete':k}">${k}</button>`).join('')}
+function qeStep1(){
+  openModal(`<div class="qeh"><b>Add expense</b><span>Step 1 of 3 · amount</span></div>
+   <div class="qeamt" id="qeA">₹${QE.amt?(+QE.amt).toLocaleString('en-IN'):'0'}</div>
+   <div class="kp">${qeKeys()}</div>
+   <div class="f2" style="margin-top:12px"><div class="f"><label>What for (optional)</label><input id="qed" value="${esc(QE.desc)}" placeholder="Petrol, D-Mart…" oninput="QE.desc=this.value"></div><div class="f"><label>Date</label><input type="date" id="qedt" value="${QE.date}" onchange="QE.date=this.value||today()"></div></div>
+   <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="qeNext()">Next →</button></div>`);
+}
+function qeKey(k){if(k==='⌫')QE.amt=QE.amt.slice(0,-1);else if(QE.amt.length<9)QE.amt=(QE.amt+k).replace(/^0+/,'');const e=$('#qeA');if(e)e.textContent='₹'+(QE.amt?(+QE.amt).toLocaleString('en-IN'):'0')}
+function qeNext(){if(!+QE.amt)return toast('Enter the amount');qeStep2()}
+function qeStep2(){
+  openModal(`<div class="qeh"><button class="btn lnk" onclick="qeStep1()">← ${rs(QE.amt)}</button><span>Step 2 of 3 · category</span></div>
+   <div class="catg">${S.cats.map((c,i)=>`<button onclick="QE.cat=S.cats[${i}];qeStep3()"><span>${catIc(c)}</span>${esc(c)}</button>`).join('')}</div>`);
+}
+function recentModes(){const seen=[];S.spends.slice().sort((a,b)=>(b.at||0)-(a.at||0)||b.date.localeCompare(a.date)).forEach(s=>{if(s.mode&&!seen.includes(s.mode)&&seen.length<4)seen.push(s.mode)});return seen}
+function qeStep3(){
+  const rec=recentModes(),mb=m=>`<button onclick="qeSave(this.dataset.m)" data-m="${esc(m)}">${esc(modeName(m))}</button>`;
+  openModal(`<div class="qeh"><button class="btn lnk" onclick="qeStep2()">← ${catIc(QE.cat)} ${esc(QE.cat)}</button><span>Step 3 of 3 · paid with</span></div>
+   ${rec.length?`<div class="ml">Recent</div><div class="modeg">${rec.map(mb).join('')}</div>`:''}
+   ${S.cards.length?`<div class="ml">Credit cards</div><div class="modeg">${S.cards.map(c=>'card:'+c.id).filter(m=>!rec.includes(m)).map(mb).join('')}</div>`:''}
+   <div class="ml">UPI, bank, cash</div><div class="modeg">${S.modes.filter(m=>!rec.includes(m)).map(mb).join('')}</div>`);
+}
+function qeSave(mode){
+  const s={id:uid(),amount:+QE.amt,date:QE.date||today(),desc:QE.desc,mode,cat:QE.cat,kind:'Ad hoc',at:Date.now()};
+  S.spends.push(s);save();closeModal();render();toast(`${rs(s.amount)} · ${s.cat} saved`,()=>{S.spends=S.spends.filter(x=>x.id!==s.id);save();render()});
 }
 
 /* ---------- actions ---------- */
 function tickItem(id,ym){
   const it=S.items.find(i=>i.id===id),x=entry(it,ym),prev=S.rec[x.key]?{...S.rec[x.key]}:null;
   if(it.hold)return openItem(id,ym);
-  if(x.paid){S.rec[x.key]={...x.r,paid:false};save();render();return toast('Marked not paid',()=>{S.rec[x.key]=prev;save();render()})}
+  if(x.paid){S.rec[x.key]={...x.r,paid:false};save();render();return toast(isIn(it)?'Marked not received':'Marked not paid',()=>{S.rec[x.key]=prev;save();render()})}
   if(!x.amt)return openItem(id,ym);
-  S.rec[x.key]={amt:x.amt,paid:true,date:today(),mode:x.r.mode||it.mode||''};save();render();
-  toast(isIn(it)?'Marked received':'Marked paid',()=>{if(prev)S.rec[x.key]=prev;else delete S.rec[x.key];save();render()});
+  const mode=x.r.mode||lastMode(it);
+  S.rec[x.key]={amt:x.amt,paid:true,date:today(),mode};if(mode)it.lastMode=mode;save();render();
+  toast(isIn(it)?'Received ✓':'Paid ✓',()=>{if(prev)S.rec[x.key]=prev;else delete S.rec[x.key];save();render()});
 }
 function openModal(h){$('#modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeModal()"><div class="sheet" role="dialog" aria-modal="true">${h}</div></div>`;const f=$('#modal input,#modal select');if(f&&matchMedia('(min-width:760px)').matches)f.focus()}
 function closeModal(){$('#modal').innerHTML=''}
 function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
 function openItem(id,ym){
-  const it=S.items.find(i=>i.id===id),x=entry(it,ym),inc=isIn(it);
-  const c=it.cardId&&card(it.cardId);
+  const it=S.items.find(i=>i.id===id),x=entry(it,ym),inc=isIn(it),la=lastAmt(it,ym);
+  const c=it.cardId&&card(it.cardId),pre=x.amt||la||'';
   openModal(`<h2>${esc(it.name)}</h2>
-   <div class="sub">${esc([dLabel(x.date)+' '+ym.slice(0,4),stLabel(x),c?`Stmt ${ord(c.stmt)}, pay by ${ord(c.due)}`:'',it.ref?'#'+it.ref:'',it.note].filter(Boolean).join(' · '))}</div>
-   <div class="f2"><div class="f"><label>${inc?'Amount':'Amount this month'}</label><input type="number" inputmode="decimal" id="pa" value="${x.amt||''}" placeholder="Enter amount"></div>
-   <div class="f"><label>${inc?'Received on':'Paid on'}</label><input type="date" id="pd" value="${x.r.date||today()}"></div></div>
-   ${inc?'':`<div class="f"><label>Paid via</label><select id="pm">${modeOpts(x.r.mode||it.mode||'')}</select></div>`}
-   <div class="acts">
-    <button class="btn lnk" onclick="editItem('${id}')">✏️ Edit</button><button class="btn lnk" style="color:var(--red)" onclick="delItem('${id}')">🗑 Delete</button><span style="flex:1"></span>
-    ${x.paid?`<button class="btn" onclick="setRec('${id}','${ym}',false)">Mark not ${inc?'received':'paid'}</button>`:`<button class="btn" onclick="setRec('${id}','${ym}',null)">Save amount</button>`}
-    <button class="btn ok" onclick="setRec('${id}','${ym}',true)">${x.paid?'Update':inc?'Received ✓':'Paid ✓'}</button>
+   <div class="sub">${esc([dLabel(x.date)+' '+ym.slice(0,4),when(x),c?`Statement ${ord(c.stmt)}, pay by ${ord(c.due)}`:'',it.ref?'#'+it.ref:'',it.note].filter(Boolean).join(' · '))}</div>
+   <div class="f"><label>${inc?'Amount received':'Amount'}${!x.amt&&la?` <span class="tag2">last month ${rs(la)}</span>`:''}</label><input type="number" inputmode="decimal" id="pa" value="${pre}" placeholder="Enter amount" style="font-size:22px;font-weight:700"></div>
+   <div class="f2"><div class="f"><label>${inc?'Received on':'Paid on'}</label><input type="date" id="pd" value="${x.r.date||today()}"></div>
+   ${inc?'<div></div>':`<div class="f"><label>Paid with</label><select id="pm">${modeOpts(x.r.mode||lastMode(it))}</select></div>`}</div>
+   <button class="btn ok wide" onclick="setRec('${id}','${ym}',true)">${x.paid?'Update':inc?'Mark received ✓':'Mark paid ✓'}</button>
+   <div class="acts" style="justify-content:space-between">
+    <span><button class="btn lnk" onclick="editItem('${id}')">✏️ Edit</button><button class="btn lnk" style="color:var(--red)" onclick="delItem('${id}')">🗑 Delete</button></span>
+    ${x.paid?`<button class="btn" onclick="setRec('${id}','${ym}',false)">Undo</button>`:`<button class="btn" onclick="setRec('${id}','${ym}',null)">Save amount only</button>`}
    </div>`);
 }
 function setRec(id,ym,paid){
   const key=id+'|'+ym,r=S.rec[key]||{},a=val('pa');
   if(paid&&!a)return toast('Enter the amount');
   S.rec[key]={...r,amt:a===''?undefined:+a,date:val('pd')||today(),mode:val('pm')||r.mode||'',paid:paid===null?!!r.paid:paid};
+  const it=S.items.find(i=>i.id===id);if(paid&&it&&S.rec[key].mode)it.lastMode=S.rec[key].mode;
   save();closeModal();render();toast(paid?'Saved ✓':'Saved');
 }
 function monthsPicker(sel){return `<div class="months">${MN.map((m,i)=>`<label><input type="checkbox" class="mchk" value="${i+1}" ${(sel||[]).includes(i+1)?'checked':''}>${m}</label>`).join('')}</div>`}
@@ -751,7 +962,7 @@ function addMenu(){
   const out=S.secs.filter(x=>x.type==='out');
   openModal(`<h2>Quick add</h2><div class="sub">What do you want to track?</div>
    <div class="qa">
-    <button onclick="spendForm()"><span>🧾</span><b>Expense</b><small>Card swipe, UPI, cash</small></button>
+    <button onclick="quickExpense()"><span>🧾</span><b>Expense</b><small>Card swipe, UPI, cash</small></button>
     <button onclick="editItem(null,'${(out[0]||S.secs[0]).k}')"><span>📅</span><b>Payment / bill</b><small>Recurring or one-time</small></button>
     <button onclick="editItem(null,'${(S.secs.find(x=>x.type==='in')||S.secs[0]).k}')"><span>💰</span><b>Income source</b><small>Salary, rent, profit</small></button>
     <button onclick="editItem(null,'${(S.secs.find(x=>x.type==='loan')||S.secs[0]).k}')"><span>🏦</span><b>Loan / EMI</b><small>With tenure</small></button>
@@ -766,14 +977,14 @@ function cardForm(id){
    <div class="f2"><div class="f"><label>Card name</label><input id="cn" value="${esc(c.name)}" placeholder="e.g. HDFC Regalia"></div><div class="f"><label>Last 4 digits</label><input id="c4" maxlength="4" inputmode="numeric" value="${esc(c.last4)}"></div></div>
    <div class="f2"><div class="f"><label>Statement day</label><input type="number" min="1" max="31" id="cs" value="${c.stmt||''}"></div><div class="f"><label>Pay-by day</label><input type="number" min="1" max="31" id="cd" value="${c.due||''}"></div></div>
    <div class="f"><label>Credit limit (₹, 0 if shared)</label><input type="number" id="cl" value="${c.limit??''}"></div>
-   <div class="f"><label>Annual fee / waiver</label><input id="cf" value="${esc(c.fee)}"></div>
+   <div class="f2"><div class="f"><label>Annual fee</label><input id="cf" value="${esc(c.fee)}"></div><div class="f"><label>Fee waived at spend (₹/yr)</label><input type="number" id="cw" value="${waiverOf(c)||''}"></div></div>
    <div class="f"><label>Note</label><input id="cno" value="${esc(c.note)}"></div>
    <div class="acts">${id?`<button class="btn dng" onclick="delCard('${id}')">Delete</button><span style="flex:1"></span>`:''}<button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="saveCard('${id||''}')">Save</button></div>`);
 }
 function saveCard(id){
   const name=val('cn');if(!name)return toast('Enter the card name');
-  const c={id:id||uid(),ok:!!id,name,last4:val('c4').replace(/\D/g,'').slice(-4),stmt:+val('cs')||1,due:+val('cd')||1,limit:+val('cl')||0,fee:val('cf'),note:val('cno')};
-  const i=S.cards.findIndex(x=>x.id===id);i>=0?S.cards[i]=c:S.cards.push(c);
+  const c={id:id||uid(),ok:!!id,name,last4:val('c4').replace(/\D/g,'').slice(-4),stmt:+val('cs')||1,due:+val('cd')||1,limit:+val('cl')||0,fee:val('cf'),waiver:+val('cw')||0,note:val('cno')};
+  const i=S.cards.findIndex(x=>x.id===id);if(i>=0)Object.assign(S.cards[i],c);else S.cards.push(c);
   const b=S.items.find(x=>x.cardId===c.id);
   if(b){b.name=c.name+' bill';b.day=c.due}else S.items.push({id:uid(),sec:(S.secs.find(x=>x.type==='card')||{k:'cards'}).k,name:c.name+' bill',amt:0,day:c.due,freq:'monthly',start:YM,remind:5,cardId:c.id});
   save();closeModal();render();toast('Card saved');
@@ -789,7 +1000,7 @@ function spendForm(id){
    <div class="acts">${id?`<button class="btn dng" onclick="delSpend('${id}')">Delete</button><span style="flex:1"></span>`:''}<button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="saveSpend('${id||''}')">Save</button></div>`);
 }
 function saveSpend(id){const a=+val('sa');if(!a)return toast('Enter the amount');if(!val('sm'))return toast('Pick how you paid');
-  const s={id:id||uid(),amount:a,date:val('sd')||today(),desc:val('sw'),mode:val('sm'),cat:val('sc'),kind:val('sk')};
+  const s={id:id||uid(),amount:a,date:val('sd')||today(),desc:val('sw'),mode:val('sm'),cat:val('sc'),kind:val('sk'),at:Date.now()};
   const i=S.spends.findIndex(x=>x.id===id);i>=0?S.spends[i]=s:S.spends.push(s);save();closeModal();render();toast('Expense saved')}
 function delSpend(id){S.spends=S.spends.filter(x=>x.id!==id);save();closeModal();render();toast('Deleted')}
 function remindForm(){openModal(`<h2>Payment alerts</h2><div class="sub">Applies to every payment — cards, loans, insurance, bills, everything.</div>
