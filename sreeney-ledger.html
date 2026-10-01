@@ -421,7 +421,31 @@ function load(){
 }
 const DEF_PIN='123456';
 function normPin(){if(!/^\d{6}$/.test(S.pin||''))S.pin=DEF_PIN}
-let S=load();normPin();
+/* one-time corrections confirmed from bank emails (Oct 2026) */
+function runFixes(){
+  S.fixes=S.fixes||{};if(S.fixes.f1)return false;
+  const C=rx=>S.cards.find(c=>rx.test(c.name)),billOf=c=>c&&S.items.find(i=>i.cardId===c.id);
+  const ia=C(/icici amazon/i),ir=C(/icici rupay/i);
+  if(ir&&ir.last4==='5008')ir.last4='';
+  if(ia)ia.last4='5008';
+  const ub=C(/uni bob/i);if(ub)ub.last4='3277';
+  const sb=C(/^sbi/i);if(sb)sb.last4='6462';
+  const ax=S.cards.find(c=>c.last4==='4936')||C(/axis indian oil/i);
+  if(ax){ax.due=2;const b=billOf(ax);if(b)b.day=2}
+  if(!S.cards.some(c=>c.last4==='3777')){const id=uid();
+    S.cards.push({id,name:'HDFC Tata Neu Plus Rupay',last4:'3777',limit:0,stmt:1,due:1,fee:'',note:'New card, not activated yet. Set statement and pay-by day after activation.',ok:true});
+    S.items.push({id:uid(),sec:(S.secs.find(x=>x.type==='card')||{k:'cards'}).k,name:'HDFC Tata Neu Plus Rupay bill',amt:0,day:1,freq:'monthly',start:START,remind:1,cardId:id,hold:true,note:'Turn off "Don\'t pay" once the card is active'});}
+  S.fixes.f1=true;return true;
+}
+function runFixes2(){
+  S.fixes=S.fixes||{};if(S.fixes.f2)return false;
+  const ar=S.cards.find(c=>c.last4==='2152');
+  if(ar){ar.due=8;ar.ok=true;ar.note='';const b=S.items.find(i=>i.cardId===ar.id);if(b){b.day=8;b.ok=true}}
+  const tn=S.cards.find(c=>c.last4==='3777');
+  if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
+  S.fixes.f2=true;return true;
+}
+let S=load();normPin();runFixes();runFixes2();
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -445,7 +469,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2();if(fx1||fx2)save();else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -627,7 +651,7 @@ const BANKRX=[[/icici/i,/icici/i],[/hdfc/i,/hdfc/i],[/axis/i,/axis/i],[/indus/i,
 function findCard(bank,l4){
   if(l4){const c=S.cards.find(c=>c.last4===l4);if(c)return{c}}
   const rx=(BANKRX.find(([a])=>a.test(bank||''))||[])[1];if(!rx)return null;
-  const cs=S.cards.filter(c=>rx.test(c.name)&&!c.last4);
+  const cs=S.cards.filter(c=>rx.test(c.name)&&(l4?!c.last4:true));
   return cs.length===1?{c:cs[0],setL4:l4||''}:null;
 }
 function billFor(c,dateStr,isPaid){
@@ -659,8 +683,10 @@ function mailDone(id,quiet){S.mailDone=S.mailDone||{};S.mailDone[id]=1;if(!quiet
 function mailApply(id,quiet){
   const m=MAIL.find(x=>x.id===id);if(!m)return;const x=mailText(m);if(!x.ok)return;
   const c=x.f.c;if(x.f.setL4&&!c.last4)c.last4=x.f.setL4;
-  if(m.kind==='spend')S.spends.push({id:uid(),amount:m.amt,date:m.date,desc:m.merchant||'',mode:'card:'+c.id,cat:'Other',kind:'Regular',at:Date.now(),src:id});
-  else{const b=billFor(c,m.kind==='paid'?m.date:m.due,m.kind==='paid');if(b){const r=S.rec[b.key]||{};S.rec[b.key]=m.kind==='paid'?{...r,amt:m.amt,paid:true,date:m.date,mode:m.via||r.mode||''}:{...r,amt:m.amt}}}
+  if(m.kind==='spend'){S.spends.push({id:uid(),amount:m.amt,date:m.date,desc:m.merchant||'',mode:'card:'+c.id,cat:'Other',kind:'Regular',at:Date.now(),src:id})}
+  if(m.kind==='bill'&&m.due){const d=+m.due.slice(8),it=S.items.find(i=>i.cardId===c.id);c.due=d;if(it){it.day=d;if(it.hold&&!it.amt){it.hold=false;it.note=''}}}
+  else{}
+  if(m.kind!=='spend'){const b=billFor(c,m.kind==='paid'?m.date:m.due,m.kind==='paid');if(b){const r=S.rec[b.key]||{};S.rec[b.key]=m.kind==='paid'?{...r,amt:m.amt,paid:true,date:m.date,mode:m.via||r.mode||''}:{...r,amt:m.amt}}}
   mailDone(id,true);if(!quiet){save();render();toast('Added from email')}
 }
 function mailApplyAll(){const L=mailPending().filter(m=>mailText(m).ok);L.forEach(m=>mailApply(m.id,true));save();render();toast(L.length+' updates added')}
