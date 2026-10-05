@@ -676,7 +676,7 @@ function okReview(kind,id){const o=kind==='card'?card(id):S.items.find(i=>i.id==
 
 /* ---------- row (big, clean) ---------- */
 function fromBank(m){m=String(m||'');const a=/^(.*?)\s*auto-?debit$/i.exec(m);return a?(a[1]?a[1]+' (auto)':'Auto-debit'):modeName(m)}
-function when(x){const w=when0(x);if(x.paid||x.st==='hold'||isIn(x.it))return w;const md=x.r.mode||lastMode(x.it);return md?w+' · from '+fromBank(md):tOf(x.it)==='loan'?w+' · bank not set':w}
+function when(x){let w=when0(x);if(x.it.ref)w+=' · USC '+x.it.ref;if(x.paid||x.st==='hold'||isIn(x.it))return w;const md=x.r.mode||lastMode(x.it);return md?w+' · from '+fromBank(md):tOf(x.it)==='loan'?w+' · bank not set':w}
 function when0(x){
   const inc=isIn(x.it);
   if(x.paid)return `${inc?'Received':'Paid'} ${dLabel(x.r.date||x.date)}${x.r.mode?' · '+modeName(x.r.mode):''}`;
@@ -711,6 +711,7 @@ function billFor(c,dateStr,isPaid){
   for(const ym of [ymOf(dateStr),addM(ymOf(dateStr),1)]){if(!occurs(it,ym))continue;const e=entry(it,ym),d=daysTo(e.date)-daysTo(dateStr);if(d>=-7&&d<=25)return e}
   return null;
 }
+function utilItem(m){if(!m.ref)return null;return S.items.find(i=>i.ref&&String(i.ref).split(/[^0-9]+/).includes(m.ref))||null}
 function findLoan(m){const ls=S.items.filter(i=>tOf(i)==='loan');return ls.find(i=>Math.abs((+i.amt||0)-m.emi)<=1)||ls.find(i=>+i.amt&&Math.abs(i.amt-m.emi)/m.emi<.02)||null}
 const near=(a,b)=>Math.abs(a-b)<=1;
 /* bank-account debit → the unpaid loan or bill it paid (same amount, within a week of its due date) */
@@ -720,7 +721,10 @@ function matchDebit(m){
     if(isIn(x.it)||tOf(x.it)==='card'||x.it.hold)return;if(m.loan&&tOf(x.it)!=='loan')return;
     const amt=x.amt||lastAmt(x.it,x.ym);if(!amt||!near(m.amt,amt))return;
     const d=daysTo(x.date)-daysTo(m.date);if(d<-10||d>7)return;c.push(x)}));
-  const un=c.filter(x=>!x.paid);return un.length===1?{x:un[0]}:c.length&&!un.length?{dup:true}:null;
+  const un=c.filter(x=>!x.paid);if(un.length===1)return{x:un[0]};if(c.length&&!un.length)return{dup:true};
+  if(m.ach){const cands=[];[addM(ym,-1),ym,addM(ym,1)].forEach(y=>entries(y).forEach(x=>{if(tOf(x.it)!=='loan'||x.paid||x.it.hold)return;const d=daysTo(x.date)-daysTo(m.date);if(d<-10||d>7)return;cands.push(x)}));
+    const hd=cands.filter(x=>/hdfc/i.test(lastMode(x.it)));return{pick:true,cands:hd.length?hd:cands}}
+  return null;
 }
 function cardByAmount(m){
   const rx=(BANKRX.find(([a])=>a.test(m.bank||''))||[])[1];if(!rx)return null;
@@ -746,7 +750,10 @@ function mailText(m){
     return{t:it?`${it.name} ${m.paid?'premium paid':'premium due'} ${rs(m.amt)}`:`New policy: ${m.insurer}${m.plan?' '+m.plan:''} ${rs(m.amt)}`,s:`${m.paid?'Paid':'Due'} ${dLabel(d)} ${d.slice(0,4)}${it?'':' · added to Insurance'}`,ok:true,f:{},ins:it}}
   if(m.kind==='loan'){const it=findLoan(m),ao=addM(ymOf(m.asOf),1),now=it?loanLeft(it,ymOf(today())):null,want=m.left-Math.max(0,mdiff(ao,ymOf(today())));
     return{t:it?`${it.name}: ${want} EMIs left`:`${m.bank} ${m.type||'loan'} · EMI ${rs(m.emi)}`,s:`Bank summary as of ${dLabel(m.asOf)} ${m.asOf.slice(0,4)} · ${m.roi}%${it?` · app said ${now==null?'no tenure':now+' left'}`:' · loan not found in app'}`,ok:!!it,dup:!!(it&&now===want&&+it.roi===m.roi),f:it?{}:null,loan:it}}
+  if(m.kind==='util'){const it=utilItem(m),d=m.paid?m.date:m.due,ym=ymOf(d),e=it&&occurs(it,ym)?entry(it,ym):null;
+    return{t:it?`${it.name} ${m.paid?'paid':'bill'} ${rs(m.amt)}`:`${m.util} bill ${rs(m.amt)} · USC ${m.ref||'?'}`,s:`${m.paid?'Paid':'Due'} ${dLabel(d)} · Amazon Pay${it?'':' · not in your bills'}`,ok:!!(e&&!e.paid&&!(it&&it.hold)),dup:!!(it&&it.hold)||!!(e&&e.paid),f:it?{}:null,ue:e,uit:it,addUtil:!it}}
   if(m.kind==='debit'){const r=matchDebit(m);
+    if(r&&r.pick)return{t:`${rs(m.amt)} HDFC auto-debit (EMI)`,s:`${dLabel(m.date)} · amount doesn't match any EMI · tap to choose`,ok:false,f:{},pick:r.cands};
     return r&&r.x?{t:`${r.x.it.name} paid ${rs(m.amt)}`,s:`${dLabel(m.date)} · ${m.acct?'from '+m.bank+' a/c ••'+m.acct:m.bank+' email'}`,ok:true,f:{},hit:r.x}:{t:'',s:'',ok:false,dup:true,hide:true}}
   const f=findCard(m.bank,m.last4)||(m.kind==='paid'&&!m.last4?cardByAmount(m):null),cn=f?f.c.name+(f.c.last4||f.setL4?' ••'+(f.c.last4||f.setL4):''):`${m.bank} ••${m.last4||'?'}`;
   if(m.kind==='paid'){const b=f&&billFor(f.c,m.date,true);return{t:`${cn} bill paid ${rs(m.amt)}`,s:`${dLabel(m.date)}${m.via?' · via '+m.via:''}${b?b.paid?' · already marked':` · for bill due ${dLabel(b.date)}`:' · no matching bill'}`,ok:!!(f&&b&&!b.paid),dup:!!(b&&b.paid),f}}
@@ -756,9 +763,9 @@ function mailText(m){
 function mailPending(){
   S.mailDone=S.mailDone||{};
   const cut=new Date(START+'-01T00:00');cut.setDate(cut.getDate()-10);const C=`${cut.getFullYear()}-${pad2(cut.getMonth()+1)}-${pad2(cut.getDate())}`;
-  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:m.kind==='income'?(m.date||'')>=START+'-01':(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
+  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:m.kind==='util'?((m.paid?m.date:m.due)||'')>=START+'-01':m.kind==='income'?(m.date||'')>=START+'-01':(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
 }
-const AUTO_KINDS=['paid','bill','loan','debit','income'];
+const AUTO_KINDS=['paid','bill','loan','debit','income','util'];
 const autoKind=k=>k==='ins'||AUTO_KINDS.includes(k)||(k==='spend'&&S.autoSpend!==false);
 const CAT_RX=[['Groceries',/mart|kirana|supermarket|grocer|fresh|bigbasket|blinkit|zepto|instamart|dmart|avenue supermarts|ratnadeep|vegetable|milk/i],
  ['Fuel',/petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|filling|bunk/i],
@@ -775,8 +782,8 @@ function mailBox(){
   const L=mailPending().filter(m=>m.kind!=='ins'&&!(S.autoMail!==false&&autoKind(m.kind)&&mailText(m).ok));if(!L.length)return'';
   const sh=mailAll?L:L.slice(0,5),nOk=L.filter(m=>mailText(m).ok).length;
   return `<section class="card2" style="--c:#0f9488"><div class="mh"><div class="rb"><b>📩 From your email (${L.length})</b><small>Tap ✓ to add · ✕ to ignore</small></div>${nOk>1?`<button class="btn" style="height:36px" onclick="mailApplyAll()">Add all ${nOk}</button>`:''}</div>
-   ${sh.map(m=>{const x=mailText(m);return `<div class="row"><span class="cic" aria-hidden="true">${m.kind==='income'?'💰':m.kind==='spend'?'💳':m.kind==='paid'||m.kind==='debit'?'✅':m.kind==='loan'?'🏦':'🧾'}</span><div class="rb"><b>${esc(x.t)}</b><small>${esc(x.s)}${x.f||x.assign?'':' · card not in your list'}</small></div>
-    <button class="tk ed" onclick="mailDone('${m.id}')" aria-label="Ignore">✕</button>${x.assign?`<button class="btn" style="height:36px" onclick="assignPayer('${m.id}')">Assign</button>`:x.ok?`<button class="tk okb" onclick="mailApply('${m.id}')" aria-label="Apply">✓</button>`:x.f?'':`<button class="tk ed" onclick="mailAddCard('${m.id}')" aria-label="Add card">＋</button>`}</div>`}).join('')}
+   ${sh.map(m=>{const x=mailText(m);return `<div class="row"><span class="cic" aria-hidden="true">${m.kind==='util'?'⚡':m.kind==='income'?'💰':m.kind==='spend'?'💳':m.kind==='paid'||m.kind==='debit'?'✅':m.kind==='loan'?'🏦':'🧾'}</span><div class="rb"><b>${esc(x.t)}</b><small>${esc(x.s)}${x.f||x.assign||x.addUtil?'':' · card not in your list'}</small></div>
+    <button class="tk ed" onclick="mailDone('${m.id}')" aria-label="Ignore">✕</button>${x.pick?`<button class="btn" style="height:36px" onclick="pickEmi('${m.id}')">Which EMI?</button>`:x.addUtil?`<button class="btn" style="height:36px" onclick="addUtil('${m.id}')">Add</button>`:x.assign?`<button class="btn" style="height:36px" onclick="assignPayer('${m.id}')">Assign</button>`:x.ok?`<button class="tk okb" onclick="mailApply('${m.id}')" aria-label="Apply">✓</button>`:x.f?'':`<button class="tk ed" onclick="mailAddCard('${m.id}')" aria-label="Add card">＋</button>`}</div>`}).join('')}
    ${L.length>5?`<button class="more" onclick="mailAll=!mailAll;render()">${mailAll?'Show less':'Show all '+L.length}</button>`:''}</section>`;
 }
 let logAll=false;
@@ -787,6 +794,28 @@ function autoLogBox(){
   return `<section class="card2" style="--c:#0f7a3d"><div class="mh"><div class="rb"><b>🔄 Updated from email (${recent.length})</b><small>Last 7 days · tap Undo if anything is wrong</small></div></div>
    ${sh.map(l=>`<div class="row"><span class="cic" aria-hidden="true">${l.ic||'✅'}</span><div class="rb"><b>${esc(l.t)}</b><small>${esc(l.s)}</small></div><button class="btn lnk" onclick="undoLog('${l.id}')">Undo</button></div>`).join('')}
    ${recent.length>3?`<button class="more" onclick="logAll=!logAll;render()">${logAll?'Show less':'Show all '+recent.length}</button>`:''}</section>`;
+}
+function pickEmi(id){
+  const m=MAIL.find(x=>x.id===id),x=mailText(m),c=x.pick||[];
+  openModal(`<h2>${rs(m.amt)} auto-debited</h2><div class="sub">${dLabel(m.date)} · ${esc(m.bank)} a/c ••${esc(m.acct||'')} · ${esc(m.to||'')}. Pick the EMI it paid.</div>
+   <div class="f"><label>EMI</label><select id="pe">${c.map(e=>`<option value="${e.key}">${esc(e.it.name)} · app EMI ${rs(e.amt)}</option>`).join('')||'<option value="">No unpaid EMI found</option>'}</select></div>
+   <label class="chkl"><input type="checkbox" id="pu" checked> Also change this EMI's amount to ${rs(m.amt)} for future months</label>
+   <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="savePickEmi('${id}')">Mark paid</button></div>`);
+}
+function savePickEmi(id){
+  const m=MAIL.find(x=>x.id===id),key=val('pe');if(!key)return toast('No EMI selected');
+  const iid=key.split('|')[0],it=S.items.find(i=>i.id===iid),prev=S.rec[key]?{...S.rec[key]}:null,prevIt={...it};
+  S.rec[key]={...(S.rec[key]||{}),amt:m.amt,paid:true,date:m.date,mode:`${m.bank} a/c ••${m.acct||''} (auto-debit)`};
+  const upd=document.getElementById('pu').checked;if(upd){it.amt=m.amt;if(+it.left)it.pending=it.left*m.amt}
+  mailDone(id,true);
+  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:`${it.name} paid ${rs(m.amt)}`,s:`${dLabel(m.date)} · HDFC auto-debit${upd?' · EMI amount updated':''}`,ic:'✅',at:Date.now(),U:[{t:'rec',key,prev},{t:'item',id:iid,prev:prevIt}]});
+  logA('You',`Matched ${rs(m.amt)} auto-debit to ${it.name}${upd?' and updated EMI amount':''}`,dLabel(m.date));
+  save();closeModal();render();toast('Marked paid');
+}
+function addUtil(id){
+  const m=MAIL.find(x=>x.id===id),sec=(S.secs.find(x=>x.k==='bills')||S.secs.find(x=>x.type==='out')).k;
+  const it={id:uid(),sec,name:`${m.util[0].toUpperCase()+m.util.slice(1)} · USC ${m.ref}`,amt:0,day:+((m.paid?m.date:m.due)||'').slice(8)||17,freq:'monthly',start:START,remind:1,ref:m.ref,mode:'Amazon Pay',note:'Added from email'};
+  S.items.push(it);logA('You','Added bill '+it.name);mailApply(id,true)||mailDone(id,true);save();render();toast('Bill added');
 }
 function assignPayer(id){
   const m=MAIL.find(x=>x.id===id),inc=S.items.filter(i=>isIn(i));
@@ -804,7 +833,10 @@ function mailDone(id,quiet){S.mailDone=S.mailDone||{};S.mailDone[id]=1;if(!quiet
 function mailApply(id,quiet,auto){
   const m=MAIL.find(x=>x.id===id);if(!m)return false;const x=mailText(m);if(!x.ok)return false;
   const U=[],recU=k=>U.push({t:'rec',key:k,prev:S.rec[k]?{...S.rec[k]}:null}),itU=it=>U.push({t:'item',id:it.id,prev:{...it}}),cU=c=>U.push({t:'card',id:c.id,prev:{...c}});
-  if(m.kind==='income'){const e=x.inc;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.via||''}}
+  if(m.kind==='util'){const it=x.uit,e=x.ue;recU(e.key);const r=S.rec[e.key]||{};
+    if(m.paid)S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:'Amazon Pay'};
+    else{itU(it);it.day=+m.due.slice(8);S.rec[e.key]={...r,amt:m.amt}}}
+  else if(m.kind==='income'){const e=x.inc;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.via||''}}
   else if(m.kind==='ins'){
     const d=m.paid?m.date:m.due,mo=+d.slice(5,7),day=+d.slice(8),recent=daysTo(d)>=-45&&daysTo(d)<=150;let it=x.ins;
     if(!it&&!m.paid&&!recent){mailDone(id,true);return false}
@@ -838,7 +870,7 @@ function mailApply(id,quiet,auto){
     }
   }
   mailDone(id,true);
-  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='income'?'💰':m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
+  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='util'?'⚡':m.kind==='income'?'💰':m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
   S.mailLog=S.mailLog.slice(0,60);
   if(!quiet){save();render();toast('Updated from email')}
   return true;
