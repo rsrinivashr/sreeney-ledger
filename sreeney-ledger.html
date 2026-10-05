@@ -220,6 +220,14 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#fca5a5}
 .modeg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .modeg button{min-height:48px;border-radius:12px;border:1px solid var(--border);background:var(--alt);font-weight:700;font-size:14px;padding:6px 10px;text-align:left}
 .steps{padding-left:20px;line-height:1.9}
+.tg{color:var(--accent);font-weight:800;font-size:.86em;letter-spacing:.2px}
+.fh{cursor:pointer}.mh .fh small{display:block}
+.lb{padding:8px 0;border-top:1px solid var(--border)}.gh+.lb{border-top:0}
+.lb .lt{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}.lb .lt span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb small{display:block;font-size:12px;color:var(--muted);margin-top:3px}.lb small b{color:var(--text)}
+.dn{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.dn svg{width:170px;height:170px;flex:none}
+.dl{flex:1;min-width:180px}.dl div{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13.5px}.dl i{width:10px;height:10px;border-radius:3px;flex:none}.dl span{flex:1}.dl b{font-variant-numeric:tabular-nums}
+.ins.hot{border-top:0;background:var(--amb);border-radius:10px;padding:10px;margin:6px 0}.ins.hot b{color:var(--amber)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;z-index:70;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
 .toast button{background:none;border:0;color:#7fb0ff;font-weight:800}
 
@@ -483,6 +491,21 @@ function runFixes7(){
   S.payers=S.payers||{};const dn=S.items.find(i=>/dn-can/i.test(i.name));if(dn)S.payers['nadeem nawaz']=dn.id;
   S.fixes.f7=true;return true;
 }
+function runFixes8(){
+  S.fixes=S.fixes||{};if(S.fixes.f8)return false;
+  const F=rx=>S.items.find(i=>tOf(i)==='loan'&&rx.test(i.name));
+  const paidOct=(it)=>{const k=it.id+'|2026-10';if(!(S.rec[k]&&S.rec[k].paid))S.rec[k]={amt:it.amt,paid:true,date:'2026-10-03',mode:'ICICI auto-debit'}};
+  const a=F(/cred insta 3\.5l/i),b=F(/cred insta 7\.4l/i),c=F(/cred insta 1\.7l/i);
+  if(a){Object.assign(a,{name:'CRED-Tanush',amt:10838,day:3,start:'2026-10',asOf:'2026-11',left:13,roi:15.49,loanAmt:311925,principalLeft:128909,plAsOf:'2026-10-05',paidAmt:249274,principalPaid:183015,sanction:'2024-11-14',closing:'2027-11-03',mode:'ICICI auto-debit',note:'',ok:true});a.pending=a.left*a.amt;paidOct(a)}
+  if(b){Object.assign(b,{name:'CRED-Paid2CCs',amt:21453,day:3,start:'2026-10',asOf:'2026-11',left:39,roi:15.77,loanAmt:760097,principalLeft:654104.81,plAsOf:'2026-10-05',paidAmt:193077,principalPaid:105992.19,mode:'ICICI auto-debit',note:'Interest rate estimated from EMI and tenure — confirm in the CRED app',ok:false});b.pending=b.left*b.amt;paidOct(b)}
+  if(c){Object.assign(c,{name:'CRED-SSHN',amt:6184,day:3,start:'2026-10',asOf:'2026-11',left:35,roi:15.6,loanAmt:176752,principalLeft:173268.38,plAsOf:'2026-10-05',paidAmt:6184,principalPaid:3483.62,mode:'ICICI auto-debit',note:'Interest rate estimated from EMI and tenure — confirm in the CRED app',ok:false});c.pending=c.left*c.amt;paidOct(c)}
+  const keep=[a,b,c].filter(Boolean).map(i=>i.id);
+  S.items=S.items.filter(i=>!(tOf(i)==='loan'&&/^cred/i.test(i.name)&&!keep.includes(i.id)));
+  S.cards.forEach(cd=>{if(/hdfc (regalia|paytm|rupay)/i.test(cd.name))cd.pool='HDFC';if(/icici (amazon|rupay)/i.test(cd.name))cd.pool='ICICI';if(/tata neu/i.test(cd.name)){cd.limit=5000;cd.pool=''}});
+  const reg=S.cards.find(cd=>/hdfc regalia/i.test(cd.name));if(reg&&!(+reg.limit))reg.limit=1300000;
+  const amz=S.cards.find(cd=>/icici amazon/i.test(cd.name));if(amz&&!(+amz.limit))amz.limit=1300000;
+  S.fixes.f8=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -491,7 +514,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -515,7 +538,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -573,7 +596,7 @@ function entry(it,ym){
   const st=it.hold?'hold':paid?'paid':n<0?'over':n<=rem?'soon':'up';
   return{it,ym,date,key,r,n,paid,amt,st};
 }
-function entries(ym,sec){return S.items.filter(i=>(!sec||i.sec===sec)&&occurs(i,ym)).map(i=>entry(i,ym)).sort((a,b)=>a.date.localeCompare(b.date)||a.it.name.localeCompare(b.it.name))}
+function entries(ym,sec){return S.items.filter(i=>!i.inBill&&(!sec||i.sec===sec)&&occurs(i,ym)).map(i=>entry(i,ym)).sort((a,b)=>a.date.localeCompare(b.date)||a.it.name.localeCompare(b.it.name))}
 function stLabel(x){
   const inc=isIn(x.it);
   if(x.st==='paid')return inc?'Received':'Paid';
@@ -621,6 +644,7 @@ pinUI();
 
 /* ---------- nav ---------- */
 let view='pay',YM=ymOf(today()),chip='pay',Q='',showPaid=false,openSec={},mq='';
+try{openSec=JSON.parse(localStorage.getItem('sl.folds'))||{}}catch(e){openSec={}}
 if(YM<START)YM=START;
 function go(v,c){
   if(v==='spends'){v='pay';c='exp'}
@@ -636,6 +660,7 @@ function shiftM(n){YM=addM(YM,n);render()}
 function tick(){const d=new Date();$('#clock').textContent=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 tick();setInterval(tick,15000);
 function render(){
+  try{localStorage.setItem('sl.folds',JSON.stringify(openSec))}catch(e){}
   $('#mLabel').textContent=mName(YM);
   const keep=document.activeElement&&document.activeElement.id;
   $('#app').innerHTML=({pay:vPay,summary:vSummary,manage:vManage})[view]();
@@ -643,6 +668,11 @@ function render(){
   updateBell();
 }
 
+/* ---------- fold helper ---------- */
+function isOpen(k,def){return openSec[k]===undefined?!!def:!!openSec[k]}
+function togF(k,def){openSec[k]=!isOpen(k,def);render()}
+function fold(k,head,sub,body,color,def,acts){const o=isOpen(k,def);
+  return `<section class="card2" style="--c:${color||'var(--accent)'}"><div class="mh"><button class="rb fh" onclick="togF('${k}',${!!def})" aria-expanded="${o}"><b>${head}</b>${sub?`<small>${sub}</small>`:''}</button>${acts||''}<button class="tk ed" onclick="togF('${k}',${!!def})" aria-label="${o?'Collapse':'Expand'}">${o?'▴':'▾'}</button></div>${o?body:''}</section>`}
 /* ---------- shared helpers ---------- */
 function spendsIn(ym){return S.spends.filter(s=>ymOf(s.date)===ym).sort((a,b)=>b.date.localeCompare(a.date))}
 function totals(ym){
@@ -661,6 +691,9 @@ function alertsNow(){
 }
 function lastAmt(it,ym){for(let k=1;k<=6;k++){const r=S.rec[it.id+'|'+addM(ym,-k)];if(r&&+r.amt)return +r.amt}return 0}
 function lastMode(it){return it.lastMode||it.mode||''}
+function pools(){const P={};S.cards.forEach(c=>{if(c.pool){(P[c.pool]=P[c.pool]||{name:c.pool,cards:[],limit:0}).cards.push(c);P[c.pool].limit=Math.max(P[c.pool].limit,+c.limit||0)}});return Object.values(P)}
+function usageUnits(ym){const U=pools().map(p=>({name:p.name+' pool ('+p.cards.length+' cards)',limit:p.limit,used:p.cards.reduce((a,c)=>a+cardUse(c,ym),0),cards:p.cards}));
+  S.cards.filter(c=>!c.pool).forEach(c=>U.push({name:c.name+(c.last4?' ••'+c.last4:''),limit:+c.limit||0,used:cardUse(c,ym),cards:[c]}));return U}
 function cardUse(c,ym){const m='card:'+c.id;return spendsIn(ym).filter(s=>s.mode===m).reduce((a,s)=>a+ +s.amount,0)+entries(ym).filter(x=>x.paid&&x.r.mode===m).reduce((a,x)=>a+x.amt,0)}
 function cardYear(c){const m='card:'+c.id,from=addM(ymOf(today()),-11);let a=S.spends.filter(s=>s.mode===m&&ymOf(s.date)>=from).reduce((t,s)=>t+ +s.amount,0);
   Object.entries(S.rec).forEach(([k,r])=>{if(r.paid&&r.mode===m&&k.split('|')[1]>=from)a+=+r.amt||0});return a}
@@ -675,11 +708,20 @@ function reviewList(){
 function okReview(kind,id){const o=kind==='card'?card(id):S.items.find(i=>i.id===id);if(o){o.ok=true;save();render();toast('Confirmed',()=>{o.ok=false;save();render()})}}
 
 /* ---------- row (big, clean) ---------- */
+function tagOf(it){
+  if(it.inBill)return 'CARD EMI';const t=tOf(it),n=String(it.name||'');
+  if(t==='card')return 'CARD';if(t==='loan')return 'LOAN';if(t==='in')return 'INCOME';
+  if(it.sec==='ins'||/\b(lic|insurance|life|policy|max ?life)\b/i.test(n))return 'INS';
+  if(it.sec==='save'){return /\bRD\b/.test(n)?'RD':'SIP'}
+  if(/^power\b/i.test(n))return 'POWER';if(/^water\b/i.test(n))return 'WATER';
+  return 'BILL';
+}
+const isAutoMode=m=>/auto/i.test(String(m||''));
 function fromBank(m){m=String(m||'');const a=/^(.*?)\s*auto-?debit$/i.exec(m);return a?(a[1]?a[1]+' (auto)':'Auto-debit'):modeName(m)}
-function when(x){let w=when0(x);if(x.it.ref)w+=' · USC '+x.it.ref;if(x.paid||x.st==='hold'||isIn(x.it))return w;const md=x.r.mode||lastMode(x.it);return md?w+' · from '+fromBank(md):tOf(x.it)==='loan'?w+' · bank not set':w}
+function when(x){let w=when0(x);if(x.it.ref)w+=' · USC '+x.it.ref;if(x.paid||x.st==='hold'||isIn(x.it))return w;const md=x.r.mode||lastMode(x.it);if(!md)return tOf(x.it)==='loan'?w+' · bank not set':w;return isAutoMode(md)?w+' · from '+fromBank(md):w+' · Manual payment · '+modeName(md)}
 function when0(x){
   const inc=isIn(x.it);
-  if(x.paid)return `${inc?'Received':'Paid'} ${dLabel(x.r.date||x.date)}${x.r.mode?' · '+modeName(x.r.mode):''}`;
+  if(x.paid)return `${inc?'Received':'Paid'} ${dLabel(x.r.date||x.date)}${x.r.mode?(inc||isAutoMode(x.r.mode)?' · '+modeName(x.r.mode):' · Manual payment · '+modeName(x.r.mode)):''}`;
   if(x.st==='hold')return "Don't pay";
   if(x.n<0)return `${dLabel(x.date)} · ${-x.n} day${x.n===-1?'':'s'} ${inc?'pending':'late'}`;
   if(x.n===0)return 'Today';if(x.n===1)return 'Tomorrow';
@@ -688,7 +730,7 @@ function when0(x){
 function row(x){
   const la=!x.amt&&!x.paid?lastAmt(x.it,x.ym):0;
   return `<div class="row st-${x.st}">
-   <button class="rb" onclick="openItem('${x.it.id}','${x.ym}')"><b>${esc(x.it.name)}</b><small>${esc(when(x))}</small></button>
+   <button class="rb" onclick="openItem('${x.it.id}','${x.ym}')"><b><span class="tg">${tagOf(x.it)}-</span>${esc(x.it.name)}</b><small>${esc(when(x))}</small></button>
    <div class="ra"><b>${x.amt?rs(x.amt):la?'<span class="ghost">~'+rs(la)+'</span>':'<span class="ghost">Enter</span>'}</b></div>
    <button class="tk" onclick="tickItem('${x.it.id}','${x.ym}')" aria-label="${x.paid?'Undo':'Mark paid'}: ${esc(x.it.name)}">${x.paid?'✓':''}</button></div>`;
 }
@@ -744,6 +786,8 @@ function findIns(m){
 const FREQ_MONTHS=(f,mo)=>{f=String(f||'').toLowerCase();if(/month/.test(f))return null;if(/quarter/.test(f))return[0,3,6,9].map(k=>((mo-1+k)%12)+1).sort((a,b)=>a-b);if(/half/.test(f))return[mo,((mo+5)%12)+1].sort((a,b)=>a-b);return[mo]};
 function payerItem(m){S.payers=S.payers||{};const id=S.payers[String(m.payer||'').toLowerCase()];return id?S.items.find(i=>i.id===id):null}
 function mailText(m){
+  if(m.kind==='cardemi'){const f=findCard(m.bank,m.last4),ex=S.items.find(i=>i.src===m.id);
+    return{t:`Card EMI: ${f?f.c.name:m.bank}${m.last4?' ••'+m.last4:''} · ${rs(m.amt)}`,s:`Converted ${dLabel(m.date)} ${m.date.slice(0,4)}${f?'':' · card not in your list'}`,ok:!!f&&!ex,dup:!!ex,f:f||null,ce:f}}
   if(m.kind==='income'){const it=payerItem(m),e=it&&occurs(it,ymOf(m.date))?entry(it,ymOf(m.date)):null;
     return{t:it?`${it.name} received ${rs(m.amt)}`:`${rs(m.amt)} from ${m.payer}`,s:`${dLabel(m.date)} · via ${m.via||'bank'}${m.cur&&m.cur!=='INR'?' · '+m.cur:''}${it?'':' · tap Assign to choose the income'}`,ok:!!e,dup:!!(e&&e.paid&&near(e.amt,m.amt)),f:it?{}:null,inc:e,assign:!it}}
   if(m.kind==='ins'){const it=findIns(m),d=m.paid?m.date:m.due;
@@ -763,10 +807,10 @@ function mailText(m){
 function mailPending(){
   S.mailDone=S.mailDone||{};
   const cut=new Date(START+'-01T00:00');cut.setDate(cut.getDate()-10);const C=`${cut.getFullYear()}-${pad2(cut.getMonth()+1)}-${pad2(cut.getDate())}`;
-  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:m.kind==='util'?((m.paid?m.date:m.due)||'')>=START+'-01':m.kind==='income'?(m.date||'')>=START+'-01':(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
+  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins'||m.kind==='cardemi')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:m.kind==='util'?((m.paid?m.date:m.due)||'')>=START+'-01':m.kind==='income'?(m.date||'')>=START+'-01':(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
 }
 const AUTO_KINDS=['paid','bill','loan','debit','income','util'];
-const autoKind=k=>k==='ins'||AUTO_KINDS.includes(k)||(k==='spend'&&S.autoSpend!==false);
+const autoKind=k=>k==='ins'||k==='cardemi'||AUTO_KINDS.includes(k)||(k==='spend'&&S.autoSpend!==false);
 const CAT_RX=[['Groceries',/mart|kirana|supermarket|grocer|fresh|bigbasket|blinkit|zepto|instamart|dmart|avenue supermarts|ratnadeep|vegetable|milk/i],
  ['Fuel',/petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|filling|bunk/i],
  ['Food',/swiggy|zomato|restaurant|cafe|hotel|biryani|bakery|food|kitchen|dhaba|pizza|chai|tea/i],
@@ -833,7 +877,11 @@ function mailDone(id,quiet){S.mailDone=S.mailDone||{};S.mailDone[id]=1;if(!quiet
 function mailApply(id,quiet,auto){
   const m=MAIL.find(x=>x.id===id);if(!m)return false;const x=mailText(m);if(!x.ok)return false;
   const U=[],recU=k=>U.push({t:'rec',key:k,prev:S.rec[k]?{...S.rec[k]}:null}),itU=it=>U.push({t:'item',id:it.id,prev:{...it}}),cU=c=>U.push({t:'card',id:c.id,prev:{...c}});
-  if(m.kind==='util'){const it=x.uit,e=x.ue;recU(e.key);const r=S.rec[e.key]||{};
+  if(m.kind==='cardemi'){const c=x.ce.c,ls=(S.secs.find(s=>s.type==='loan')||{k:'loans'}).k;
+    const it={id:uid(),sec:ls,name:`${c.name}${c.last4?' ••'+c.last4:''} · ${shortRs(m.amt)} · ${dLabel(m.date)}`,amt:0,day:c.due||1,freq:'monthly',start:ymOf(m.date),asOf:ymOf(m.date),left:0,roi:0,loanAmt:m.amt,
+      inBill:true,emiCard:c.id,mode:'card:'+c.id,src:m.id,note:'Card EMI (paid inside the card bill) — add EMI, months and interest from the bank\'s EMI schedule to confirm',ok:false};
+    S.items.push(it);U.push({t:'newitem',id:it.id})}
+  else if(m.kind==='util'){const it=x.uit,e=x.ue;recU(e.key);const r=S.rec[e.key]||{};
     if(m.paid)S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:'Amazon Pay'};
     else{itU(it);it.day=+m.due.slice(8);S.rec[e.key]={...r,amt:m.amt}}}
   else if(m.kind==='income'){const e=x.inc;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.via||''}}
@@ -870,7 +918,7 @@ function mailApply(id,quiet,auto){
     }
   }
   mailDone(id,true);
-  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='util'?'⚡':m.kind==='income'?'💰':m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
+  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='cardemi'?'💳':m.kind==='util'?'⚡':m.kind==='income'?'💰':m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
   S.mailLog=S.mailLog.slice(0,60);
   if(!quiet){save();render();toast('Updated from email')}
   return true;
@@ -889,7 +937,7 @@ function undoLog(lid){
 function autoMail(){
   let n=0;
   mailPending().filter(m=>(m.kind==='paid'||m.kind==='debit')&&(m.date||'')<START+'-01'&&!mailText(m).ok).forEach(m=>{mailDone(m.id,true);n++});
-  mailPending().filter(m=>m.kind==='ins'||(S.autoMail!==false&&autoKind(m.kind))).sort((a,b)=>(a.at||0)-(b.at||0)).forEach(m=>{if(mailApply(m.id,true,true))n++});
+  mailPending().filter(m=>m.kind==='ins'||m.kind==='cardemi'||(S.autoMail!==false&&autoKind(m.kind))).sort((a,b)=>(a.at||0)-(b.at||0)).forEach(m=>{if(mailApply(m.id,true,true))n++});
   if(n)save();return n;
 }
 function mailApplyAll(){const L=mailPending().filter(m=>mailText(m).ok);let n=0;L.forEach(m=>{if(mailApply(m.id,true))n++});save();render();toast(n+' updates added')}
@@ -943,13 +991,15 @@ function vPay(){
     const inc=chip==='in',es=entries(YM).filter(x=>matchChip(x.it)&&(!x.it.hold||S.showHold));
     const early=!inc&&YM===cur?earlierOverdue().filter(x=>matchChip(x.it)):[];
     const g=f=>es.filter(f);
-    const over=g(x=>!x.paid&&x.st!=='hold'&&x.n<0),wk=g(x=>!x.paid&&x.st!=='hold'&&x.n>=0&&x.n<=7),later=g(x=>!x.paid&&x.st!=='hold'&&x.n>7),paid=g(x=>x.paid),hold=g(x=>x.st==='hold');
+    const nxt=YM===cur?entries(addM(cur,1)).filter(x=>matchChip(x.it)&&!x.it.hold&&!x.paid&&x.n>=0&&x.n<=13):[];
+    const over=g(x=>!x.paid&&x.st!=='hold'&&x.n<0),wk=g(x=>!x.paid&&x.st!=='hold'&&x.n>=0&&x.n<=6),nw=[...g(x=>!x.paid&&x.st!=='hold'&&x.n>=7&&x.n<=13),...nxt],later=g(x=>!x.paid&&x.st!=='hold'&&x.n>13),paid=g(x=>x.paid),hold=g(x=>x.st==='hold');
     const grp=(t,cls,a)=>a.length?`<div class="gh ${cls}">${t}<span>${rs(a.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0))}</span></div>${a.map(row).join('')}`:'';
     body=`<section class="list">
-      ${grp('From earlier months','r',early)}${grp(inc?'Late':'Overdue','r',over)}${grp(inc?'Expected this week':'Due this week','a',wk)}${grp('Later this month','',later)}
+      ${grp('From earlier months','r',early)}${grp(inc?'Late':'Overdue','r',over)}${grp(inc?'Expected this week':'This week','a',wk)}${grp(inc?'Expected next week':'Next week','',nw)}
+      ${later.length?`<button class="gh fold" onclick="togF('later',false)">Later · ${later.length}<span>${rs(later.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0))} ${isOpen('later',false)?'▴':'▾'}</span></button>${isOpen('later',false)?later.map(row).join(''):''}`:''}
       ${paid.length?`<button class="gh g fold" onclick="showPaid=!showPaid;render()">${inc?'Received':'Paid'} · ${paid.length}<span>${rs(paid.reduce((s,x)=>s+x.amt,0))} ${showPaid?'▴':'▾'}</span></button>${showPaid?paid.map(row).join(''):''}`:''}
       ${hold.length?`<div class="gh">Don't pay · ${hold.length}</div>${hold.map(row).join('')}`:''}
-      ${!early.length&&!es.length?`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`:''}
+      ${!early.length&&!es.length&&!nxt.length?`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`:''}
     </section>`;
   }
   return top+autoLogBox()+mailBox()+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body;
@@ -967,32 +1017,58 @@ function chart(){
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Money in and out by month" style="width:100%;height:auto"><line x1="0" y1="140" x2="${W}" y2="140" stroke="var(--border)"/>${bars}</svg>
    <div class="legend"><span><i style="background:var(--green)"></i>Came in</span><span><i style="background:var(--red)"></i>Paid out</span>${months.length<3?'<span>Builds up month by month</span>':''}</div>`;
 }
+function toPay(i,ym){if(+i.principalLeft)return +i.principalLeft;const l=loanLeft(i,ym);if(l!=null&&+i.amt)return l*(+i.amt);return i.inBill?(+i.loanAmt||0):0}
+function shortRs(v){v=Math.round(v||0);return v>=1e7?'₹'+(v/1e7).toFixed(2)+'Cr':v>=1e5?'₹'+(v/1e5).toFixed(1)+'L':v>=1e3?'₹'+(v/1e3).toFixed(0)+'K':'₹'+v}
+function activeLoans(){return S.items.filter(i=>tOf(i)==='loan'&&!i.hold&&(i.inBill||occurs(i,YM)))}
+function prepayOrder(){
+  const ls=activeLoans();
+  const withR=ls.filter(i=>+i.roi).sort((a,b)=>(b.roi-a.roi)||(toPay(a,YM)-toPay(b,YM))),noR=ls.filter(i=>!+i.roi);
+  return{withR,noR};
+}
 function loanInsights(){
-  const ls=S.items.filter(i=>tOf(i)==='loan'&&occurs(i,YM)&&!i.hold);if(!ls.length)return'';
-  const emi=ls.reduce((a,i)=>a+ +i.amt,0),ends=ls.map(i=>[i,loanEnd(i)]).filter(x=>x[1]);
-  const next=ends.slice().sort((a,b)=>a[1].localeCompare(b[1]))[0],last=ends.slice().sort((a,b)=>b[1].localeCompare(a[1]))[0];
-  const hi=ls.filter(i=>+i.roi).sort((a,b)=>b.roi-a.roi)[0];
-  const left=ls.reduce((a,i)=>{const l=loanLeft(i,YM);return a+(l!=null?l*(+i.amt||0):0)},0);
+  const ls=activeLoans();if(!ls.length)return'';
+  const own=ls.filter(i=>!i.inBill),cemi=ls.filter(i=>i.inBill);
+  const emi=own.reduce((a,i)=>a+ +i.amt,0),total=ls.reduce((a,i)=>a+toPay(i,YM),0);
+  const ends=own.map(i=>[i,loanEnd(i)]).filter(x=>x[1]),last=ends.slice().sort((a,b)=>b[1].localeCompare(a[1]))[0];
   const mLeft=last?mdiff(ymOf(today()),last[1])+1:null;
-  return `<section class="card2" style="--c:#c81e3a"><h3>🏦 Loans</h3>
-   <div class="kv"><div><span>EMI / month</span><b>${rs(emi)}</b></div><div><span>EMIs left</span><b>${rs(left)}</b></div></div>
-   ${last?`<div class="ins"><b>🎯 Debt-free in ${mLeft} months</b><small>Last EMI ${mName(last[1])} · ${esc(last[0].name)}</small></div>`:''}
-   ${next?`<div class="ins"><b>✅ Next to close: ${esc(next[0].name)}</b><small>${mName(next[1])} · frees up ${rs(next[0].amt)}/month</small></div>`:''}
-   ${hi?`<div class="ins"><b>💡 Prepay first: ${esc(hi.name)}</b><small>Highest interest at ${hi.roi}% — extra money here saves the most</small></div>`:''}
-   <button class="more" onclick="openSec.loans=!openSec.loans;render()">${openSec.loans?'Hide':'All '+ls.length+' loans'}</button>
-   ${openSec.loans?ls.slice().sort((a,b)=>(loanEnd(a)||'9').localeCompare(loanEnd(b)||'9')).map(i=>{const l=loanLeft(i,YM),e=loanEnd(i);return `<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${l!=null?l+' months left · ends '+mName(e):'tenure not set'}${i.roi?' · '+i.roi+'%':''} · ${lastMode(i)?'from '+esc(fromBank(lastMode(i))):'bank not set'}</small></button><div class="ra"><b>${rs(i.amt)}</b></div></div>`}).join(''):''}
-  </section>`;
+  const {withR,noR}=prepayOrder();
+  const pr=(i,n)=>`<div class="row"><span class="cic" style="font-weight:800">${n}</span><button class="rb" onclick="editItem('${i.id}')"><b><span class="tg">${tagOf(i)}-</span>${esc(i.name)}</b><small>${i.roi?i.roi+'% · ':''}${shortRs(toPay(i,YM))} to pay${loanLeft(i,YM)!=null?' · '+loanLeft(i,YM)+'m left':''}</small></button><div class="ra"><b>${+i.amt?rs(i.amt):'—'}</b></div></div>`;
+  const prepay=`<div class="ins hot"><b>🎯 Close first if you have surplus</b><small>Highest interest first</small></div>${withR.slice(0,3).map((i,k)=>pr(i,k+1)).join('')}
+    <button class="more" onclick="togF('prepayAll',false)">${isOpen('prepayAll',false)?'Hide full order':'See full order ('+(withR.length+noR.length)+')'}</button>
+    ${isOpen('prepayAll',false)?withR.slice(3).map((i,k)=>pr(i,k+4)).join('')+(noR.length?`<div class="gh">Rate not set · add it to rank</div>${noR.map(i=>pr(i,'?')).join('')}`:''):''}`;
+  const sorted=ls.slice().sort((a,b)=>(+b.amt||0)-(+a.amt||0)||(toPay(b,YM)-toPay(a,YM)));
+  const showAll=isOpen('loanAll',false),list=showAll?sorted:sorted.slice(0,10),mx=Math.max(1,...sorted.map(i=>+i.amt||0));
+  const bars=list.map(i=>{const l=loanLeft(i,YM),w=(+i.amt||0)/mx*100;return `<div class="lb"><div class="lt"><span><span class="tg">${tagOf(i)}-</span>${esc(i.name)}</span><span>${+i.amt?rs(i.amt)+'/mo':'EMI not set'}</span></div>
+    <div class="bar"><i style="width:${w}%;background:${i.inBill?'#eb6834':'var(--accent)'}"></i></div><small>${l!=null?l+'m left · ':''}<b>${shortRs(toPay(i,YM))} to pay</b>${+i.principalLeft?' (principal)':''}${loanEnd(i)?' · ends '+mName(loanEnd(i)):''}</small></div>`}).join('');
+  const body=`<div class="kv"><div><span>EMI / month</span><b>${rs(emi)}</b></div><div><span>Still to pay (all)</span><b>${shortRs(total)}</b></div></div>
+   ${last?`<div class="ins"><b>🏁 Debt-free in ${mLeft} months</b><small>Last EMI ${mName(last[1])} · ${esc(last[0].name)}</small></div>`:''}
+   ${prepay}
+   <div class="gh">EMI per loan${cemi.length?' · orange = card EMI (inside card bill)':''}</div>${bars}
+   ${sorted.length>10?`<button class="more" onclick="togF('loanAll',false)">${showAll?'Show top 10':'Show all '+sorted.length+' loans'}</button>`:''}
+   <p class="hint">"To pay" uses principal left where you've entered it; otherwise EMI × months left (includes interest).</p>`;
+  return fold('sLoans','🏦 Loans',`${own.length} loans${cemi.length?' + '+cemi.length+' card EMIs':''} · ${shortRs(total)} to pay`,body,'#c81e3a',false);
+}
+function donut(){
+  const segs=[];S.secs.filter(s=>s.type!=='in').forEach(s=>{const v=entries(YM,s.k).filter(x=>!x.it.hold).reduce((a,x)=>a+(x.amt||lastAmt(x.it,x.ym)),0);if(v)segs.push([s.ic+' '+s.t,v,s.c])});
+  const ex=spendsIn(YM).reduce((a,s)=>a+ +s.amount,0);if(ex)segs.push(['🧾 Expenses',ex,'#64748b']);
+  const tot=segs.reduce((a,s)=>a+s[1],0);if(!tot)return'';
+  let ang=-Math.PI/2;const R=70,r=44,C=90;
+  const arcs=segs.map(([n,v,c])=>{const a2=ang+v/tot*Math.PI*2,lg=a2-ang>Math.PI?1:0,p=(a,rad)=>[C+rad*Math.cos(a),C+rad*Math.sin(a)];
+    const [x1,y1]=p(ang,R),[x2,y2]=p(a2,R),[x3,y3]=p(a2,r),[x4,y4]=p(ang,r);const d=segs.length===1?`M${C-R},${C}a${R},${R} 0 1,0 ${2*R},0a${R},${R} 0 1,0 ${-2*R},0M${C-r},${C}a${r},${r} 0 1,1 ${2*r},0a${r},${r} 0 1,1 ${-2*r},0`:`M${x1},${y1}A${R},${R} 0 ${lg},1 ${x2},${y2}L${x3},${y3}A${r},${r} 0 ${lg},0 ${x4},${y4}Z`;ang=a2;
+    return `<path d="${d}" fill="${c}" fill-rule="evenodd" stroke="var(--panel)" stroke-width="2"><title>${esc(n)}: ${rs(v)}</title></path>`}).join('');
+  const body=`<div class="dn"><svg viewBox="0 0 180 180" role="img" aria-label="Where money went this month">${arcs}<text x="90" y="86" text-anchor="middle" font-size="11" fill="var(--muted)">${mName(YM)}</text><text x="90" y="104" text-anchor="middle" font-size="16" font-weight="800" fill="var(--text)">${shortRs(tot)}</text></svg>
+   <div class="dl">${segs.sort((a,b)=>b[1]-a[1]).map(([n,v,c])=>`<div><i style="background:${c}"></i><span>${esc(n)}</span><b>${shortRs(v)} · ${Math.round(v/tot*100)}%</b></div>`).join('')}</div></div>`;
+  return fold('sDonut','🍩 Where money went',`${mName(YM)} · ${shortRs(tot)} planned`,body,'#1a63e8',false);
 }
 function cardInsights(){
   if(!S.cards.length)return'';
-  const rows=S.cards.map(c=>{const u=cardUse(c,YM),pc=+c.limit?u/c.limit:0,w=waiverOf(c),yr=w?cardYear(c):0;
-    const b=entries(YM).find(x=>x.it.cardId===c.id);
-    return `<div class="crow"><div class="ct"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><span>${b?(b.paid?'<em class="gd">Bill paid</em>':`Bill due ${dLabel(b.date)}`):''}</span></div>
-     ${+c.limit?`<div class="bar"><i style="width:${Math.min(pc*100,100)}%;background:${pc>.3?'var(--red)':'var(--accent)'}"></i></div><small>${rs(u)} of ${rs(c.limit)} used${pc>.3?` · <em class="bd">${Math.round(pc*100)}% — above 30%</em>`:''}</small>`:`<small>${rs(u)} used · shared limit</small>`}
-     ${w?`<div class="bar thin"><i style="width:${Math.min(yr/w*100,100)}%;background:var(--green)"></i></div><small>Fee waiver: ${rs(yr)} of ${rs(w)} spent in 12 months${yr>=w?' · <em class="gd">waived ✓</em>':` · ${rs(w-yr)} to go`}</small>`:''}
-    </div>`}).join('');
-  const hot=S.cards.filter(c=>+c.limit&&cardUse(c,YM)/c.limit>.3).length;
-  return `<section class="card2" style="--c:#1a63e8"><h3>💳 Cards${hot?` <em class="bd">· ${hot} above 30%</em>`:''}</h3>${rows}</section>`;
+  const U=usageUnits(YM).filter(u=>u.limit||u.used);
+  const rows=U.map(u=>{const pc=u.limit?u.used/u.limit:0;return `<div class="crow"><div class="ct"><b>${esc(u.name)}</b><span>${u.limit?Math.round(pc*100)+'%':''}</span></div>
+    ${u.limit?`<div class="bar"><i style="width:${Math.min(pc*100,100)}%;background:${pc>.3?'var(--red)':'var(--accent)'}"></i></div>`:''}
+    <small>${rs(u.used)}${u.limit?' of '+rs(u.limit)+' used':' used · no limit set'}${pc>.3?' · <em class="bd">above 30%</em>':''}${u.cards.length>1?' · '+u.cards.map(c=>esc(c.name.replace(/^(HDFC|ICICI)\s*/i,''))).join(', '):''}</small></div>`}).join('');
+  const fees=S.cards.filter(c=>waiverOf(c)).map(c=>{const w=waiverOf(c),yr=cardYear(c);return `<div class="crow"><div class="ct"><b>${esc(c.name)}</b><span>${yr>=w?'<em class="gd">waived ✓</em>':shortRs(w-yr)+' to go'}</span></div><div class="bar thin"><i style="width:${Math.min(yr/w*100,100)}%;background:var(--green)"></i></div><small>Fee waiver: ${rs(yr)} of ${rs(w)} in 12 months</small></div>`}).join('');
+  const hot=U.filter(u=>u.limit&&u.used/u.limit>.3).length;
+  return fold('sCards','💳 Card usage vs limit',hot?hot+' above 30%':'All under 30%',rows+(fees?`<div class="gh">Annual fee waiver</div>${fees}`:''),'#1a63e8',false);
 }
 function vSummary(){
   const a=monthNums(YM),pm=addM(YM,-1),b=pm>=START?monthNums(pm):null,t=totals(YM);
@@ -1008,10 +1084,10 @@ function vSummary(){
     </div>
     <small>${rs(t.due)} still to pay this month</small>
   </section>
-  <section class="card2"><h3>📊 Last 12 months</h3>${chart()}</section>
-  ${loanInsights()}${cardInsights()}
-  <section class="card2" style="--c:#c9860f"><h3>🗂️ Paid by box</h3>${boxes||'<div class="empty">Nothing due.</div>'}</section>
-  ${Object.keys(cats).length?`<section class="card2" style="--c:#64748b"><h3>🧾 Expenses by category</h3>${Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<div class="row"><span class="cic">${catIc(k)}</span><div class="rb"><b>${esc(k)}</b></div><div class="ra"><b>${rs(v)}</b></div></div>`).join('')}</section>`:''}`;
+  ${donut()}${loanInsights()}${cardInsights()}
+  ${fold('sTrend','📊 Last 12 months','Money in vs out',chart(),'#0f7a3d',false)}
+  ${fold('sBox','🗂️ Paid by box','Paid vs planned',boxes||'<div class="empty">Nothing due.</div>','#c9860f',false)}
+  ${Object.keys(cats).length?fold('sCat','🧾 Expenses by category',shortRs(Object.values(cats).reduce((a,b)=>a+b,0))+' this month',Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<div class="row"><span class="cic">${catIc(k)}</span><div class="rb"><b>${esc(k)}</b></div><div class="ra"><b>${rs(v)}</b></div></div>`).join(''),'#64748b',false):''}`;
 }
 function shareReport(){
   const a=monthNums(YM),pm=addM(YM,-1),b=pm>=START?monthNums(pm):null,t=totals(YM);
@@ -1056,12 +1132,12 @@ function vManage(){
   ${rv.length&&!q?`<section class="card2" style="--c:#e8590c"><h3>⚠️ Please check (${rv.length})</h3><div class="hint">From your sheet. Fix it, delete it, or tick ✓ if it's right.</div>
    ${rv.map(x=>`<div class="row"><div class="rb"><b>${esc(x.name)}</b><small>${esc(x.info)}</small><small class="warn">${esc(x.what)}</small></div>
     <button class="tk ed" onclick="${x.kind==='card'?`cardForm('${x.id}')`:`editItem('${x.id}')`}" aria-label="Edit">✏️</button><button class="tk ed" onclick="${x.kind==='card'?`delCard('${x.id}')`:`delItem('${x.id}')`}" aria-label="Delete">🗑</button><button class="tk okb" onclick="okReview('${x.kind}','${x.id}')" aria-label="Looks right">✓</button></div>`).join('')}</section>`:''}
-  <section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b><small>${S.cards.length} cards</small></div><button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button></div>
-   ${cards.map(c=>`<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Statement ${ord(c.stmt)} · pay by ${ord(c.due)}${+c.limit?' · '+rs(c.limit):''}</small></button><button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete">🗑</button></div>`).join('')}</section>
+  ${q&&!cards.length?'':(()=>{const body=cards.map(c=>`<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Statement ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · '+rs(c.limit):''}</small></button><button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete">🗑</button></div>`).join('');
+     return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards',body,'#1a63e8',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
   ${secs}
   ${q?'':activityBox()}
   ${q?'':`<button class="btn wide" onclick="secForm()">＋ New box</button>
-  <section class="card2" style="--c:#64748b"><h3>⚙️ Settings</h3><div class="setg">
+  ${fold('mset','⚙️ Settings','Alerts, PIN, modes, email reader',`<div class="setg">
    <button onclick="remindForm()">🔔 Alerts<small>${(S.remind??1)?(S.remind??1)+' day before':'On the due day'}</small></button>
    <button onclick="changePin()">🔒 Change PIN<small>6 digits</small></button>
    <button onclick="installApp()">📲 Install app<small>Home screen icon</small></button>
@@ -1073,15 +1149,15 @@ function vManage(){
    <button onclick="toggleSet('autoSpend')">🧾 Auto-add card spends<small>${S.autoSpend===false?'Off · ask me first':'On · from card alerts'}</small></button>
    <button onclick="toggleSet('autoMail')">🔄 Auto-mark paid<small>${S.autoMail===false?'Off · ask me first':'On · from bank emails'}</small></button>
    <button onclick="cashForm()">🏦 Money in bank<small>${S.cash?rs(S.cash.amt):'Not set'}</small></button>
-  </div></section>
-  <section class="card2" style="--c:#0f9488"><h3>💾 Data</h3><div class="setg">
+  </div>`,'#64748b',false)}
+  ${fold('mdata','💾 Data','Backup, restore, export',`<div class="setg">
    <button onclick="exportJSON()">⬇️ Back up<small>Download a copy</small></button>
    <button onclick="$('#imp').click()">⬆️ Restore<small>From a backup</small></button>
    <button onclick="exportCSV()">📄 Export month<small>CSV for sheets</small></button>
    <button onclick="resetSeed()">↺ Reset<small>Back to sheet data</small></button>
    ${typeof signOut==='function'?'<button onclick="signOut()">🚪 Sign out<small>Clears this device</small></button>':''}
   </div><input type="file" id="imp" accept=".json" class="hide" onchange="importJSON(this.files[0])">
-  <div class="hint">${SYNC_NOTE}</div></section>`}`;
+  <div class="hint">${SYNC_NOTE}</div>`,'#0f9488',false)}`}`;
 }
 
 /* ---------- install as app ---------- */
@@ -1143,7 +1219,7 @@ function tickItem(id,ym){
   if(x.paid){S.rec[x.key]={...x.r,paid:false};save();render();return toast(isIn(it)?'Marked not received':'Marked not paid',()=>{S.rec[x.key]=prev;save();render()})}
   if(!x.amt)return openItem(id,ym);
   const mode=x.r.mode||lastMode(it);
-  S.rec[x.key]={amt:x.amt,paid:true,date:today(),mode};if(mode)it.lastMode=mode;save();render();
+  S.rec[x.key]={amt:x.amt,paid:true,date:today(),mode};if(mode){it.lastMode=mode;it.mode=mode}save();render();
   toast(isIn(it)?'Received ✓':'Paid ✓',()=>{if(prev)S.rec[x.key]=prev;else delete S.rec[x.key];save();render()});
 }
 function openModal(h){$('#modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeModal()"><div class="sheet" role="dialog" aria-modal="true">${h}</div></div>`;const f=$('#modal input,#modal select');if(f&&matchMedia('(min-width:760px)').matches)f.focus()}
@@ -1167,10 +1243,11 @@ function setRec(id,ym,paid){
   const key=id+'|'+ym,r=S.rec[key]||{},a=val('pa');
   if(paid&&!a)return toast('Enter the amount');
   S.rec[key]={...r,amt:a===''?undefined:+a,date:val('pd')||today(),mode:val('pm')||r.mode||'',paid:paid===null?!!r.paid:paid};
-  const it=S.items.find(i=>i.id===id);if(paid&&it&&S.rec[key].mode)it.lastMode=S.rec[key].mode;
+  const it=S.items.find(i=>i.id===id);if(paid&&it&&S.rec[key].mode){it.lastMode=S.rec[key].mode;it.mode=S.rec[key].mode}
   save();closeModal();render();toast(paid?'Saved ✓':'Saved');
 }
 function monthsPicker(sel){return `<div class="months">${MN.map((m,i)=>`<label><input type="checkbox" class="mchk" value="${i+1}" ${(sel||[]).includes(i+1)?'checked':''}>${m}</label>`).join('')}</div>`}
+function freqUI(v){const t=(id,on)=>{const e=document.getElementById(id);if(e)e.classList.toggle('hide',!on)};t('emo',v==='months');t('eon',v==='once');t('edw',v!=='once');t('esw',v!=='once')}
 function editItem(id,secK){
   if(!secK&&!id)secK=(S.secs.find(x=>x.type==='out')||S.secs[0]).k;
   const it=S.items.find(i=>i.id===id)||{sec:secK,freq:'monthly',day:5,start:YM,remind:3,amt:''};
@@ -1178,15 +1255,17 @@ function editItem(id,secK){
   openModal(`<h2>${id?'Edit':'Add'} · ${esc(secOf(it.sec).t)}</h2><div class="sub">${T==='loan'?'Months left are counted from the start month.':'Set amount to 0 if it changes every month.'}</div>
    <div class="f"><label>Name</label><input id="en" value="${esc(it.name)}" placeholder="${inc?'e.g. Salary, Rent received':T==='loan'?'e.g. HDFC home loan':'e.g. Power bill, School fee'}"></div>
    <div class="f2"><div class="f"><label>${T==='loan'?'EMI':'Amount'} (₹)</label><input type="number" inputmode="decimal" id="ea" value="${it.amt??''}"></div>
-   <div class="f"><label>${inc?'Expected day':'Due day'} of month</label><input type="number" min="1" max="31" id="ed" value="${it.day||''}"></div></div>
+   <div class="f ${it.freq==='once'?'hide':''}" id="edw"><label>${inc?'Expected day':'Due day'} of month</label><input type="number" min="1" max="31" id="ed" value="${it.day||''}"></div></div>
    <div class="f"><label>Box</label><select id="esec" onchange="moveBox('${id||''}',this.value)">${sel(S.secs.map(x=>[x.k,x.ic+' '+x.t]),it.sec)}</select></div>
    ${T==='card'?`<div class="f"><label>Card</label><select id="ec">${sel(S.cards.map(c=>[c.id,modeName('card:'+c.id)]),it.cardId)}</select></div>`:''}
-   <div class="f2"><div class="f"><label>How often</label><select id="ef" onchange="document.getElementById('emo').classList.toggle('hide',this.value!=='months');document.getElementById('eon').classList.toggle('hide',this.value!=='once')">${sel([['monthly','Every month'],['months','Selected months'],['once','One time']],it.freq)}</select></div>
-   <div class="f"><label>Start month</label><input type="month" id="es" value="${it.asOf||it.start||YM}"></div></div>
+   <div class="f2"><div class="f"><label>How often</label><select id="ef" onchange="freqUI(this.value)">${sel([['monthly','Every month'],['months','Selected months'],['once','One time']],it.freq)}</select></div>
+   <div class="f ${it.freq==='once'?'hide':''}" id="esw"><label>Start month</label><input type="month" id="es" value="${it.asOf||it.start||YM}"></div></div>
    <div class="f ${it.freq==='months'?'':'hide'}" id="emo"><label>Which months</label>${monthsPicker(it.months)}</div>
    <div class="f ${it.freq==='once'?'':'hide'}" id="eon"><label>Date</label><input type="date" id="eo" value="${it.date||today()}"></div>
    ${T==='loan'?`<div class="f2"><div class="f"><label>Months left (from start)</label><input type="number" id="el" value="${it.left||''}"></div><div class="f"><label>Interest %</label><input type="number" step="0.01" id="er" value="${it.roi||''}"></div></div>
-     <div class="f"><label>Loan amount (₹)</label><input type="number" id="et" value="${it.loanAmt||''}"></div>`:''}
+     <div class="f2"><div class="f"><label>Loan amount (₹)</label><input type="number" id="et" value="${it.loanAmt||''}"></div><div class="f"><label>Principal left (₹)</label><input type="number" step="0.01" id="epl" value="${it.principalLeft||''}"></div></div>
+     <div class="f2"><div class="f"><label>Amount paid so far (₹)</label><input type="number" step="0.01" id="epa" value="${it.paidAmt||''}"></div><div class="f"><label>Principal paid (₹)</label><input type="number" step="0.01" id="epp" value="${it.principalPaid||''}"></div></div>
+     <div class="f2"><div class="f"><label>Sanction date</label><input type="date" id="esd" value="${it.sanction||''}"></div><div class="f"><label>Closing date</label><input type="date" id="ecd" value="${it.closing||''}"></div></div>`:''}
    ${T==='out'?`<div class="f2"><div class="f"><label>Ref / service no.</label><input id="ex" value="${esc(it.ref)}"></div><div class="f"><label>Place / for</label><input id="ep" value="${esc(it.place)}"></div></div>`:''}
    <div class="f"><label>${inc?'Comes into':T==='loan'?'EMI debited from (bank)':'Usually paid via'}</label><select id="em">${modeOpts(it.mode||'')}</select></div>
    <div class="f"><label>Note</label><input id="eno" value="${esc(it.note)}"></div>
@@ -1211,7 +1290,10 @@ function saveItem(id){
   const it={...old,id:id||uid(),sec:sk,name,amt:+val('ea')||0,day:+val('ed')||1,freq:val('ef'),start:val('es')||YM,
     months:[...document.querySelectorAll('.mchk:checked')].map(c=>+c.value),date:val('eo'),mode:val('em'),note:val('eno'),hold:!!(document.getElementById('eh')||{}).checked};
   if(it.freq==='months'&&!it.months.length)return toast('Pick at least one month');
-  if(T==='loan'){it.left=+val('el')||0;it.asOf=it.start;it.roi=+val('er')||0;it.loanAmt=+val('et')||0;it.pending=it.left*it.amt}
+  if(it.freq==='once'){if(!it.date)return toast('Pick the date');it.start=ymOf(it.date);it.day=+it.date.slice(8)}
+  if(T==='loan'){it.left=+val('el')||0;it.asOf=it.start;it.roi=+val('er')||0;it.loanAmt=+val('et')||0;it.pending=it.left*it.amt;
+    const pl=val('epl');if(pl!==''&&+pl!==+old.principalLeft){it.principalLeft=+pl;it.plAsOf=today()}else if(pl===''){delete it.principalLeft}
+    it.paidAmt=+val('epa')||0;it.principalPaid=+val('epp')||0;it.sanction=val('esd');it.closing=val('ecd')}
   if(T==='out'){it.ref=val('ex');it.place=val('ep')}
   if(T==='card')it.cardId=val('ec');
   if(id)it.ok=true;
@@ -1261,14 +1343,14 @@ function cardForm(id){
   openModal(`<h2>${id?'Edit card':'Add credit card'}</h2><div class="sub">Only the last 4 digits — never the full card number.</div>
    <div class="f2"><div class="f"><label>Card name</label><input id="cn" value="${esc(c.name)}" placeholder="e.g. HDFC Regalia"></div><div class="f"><label>Last 4 digits</label><input id="c4" maxlength="4" inputmode="numeric" value="${esc(c.last4)}"></div></div>
    <div class="f2"><div class="f"><label>Statement day</label><input type="number" min="1" max="31" id="cs" value="${c.stmt||''}"></div><div class="f"><label>Pay-by day</label><input type="number" min="1" max="31" id="cd" value="${c.due||''}"></div></div>
-   <div class="f"><label>Credit limit (₹, 0 if shared)</label><input type="number" id="cl" value="${c.limit??''}"></div>
+   <div class="f2"><div class="f"><label>Credit limit (₹)</label><input type="number" id="cl" value="${c.limit??''}"></div><div class="f"><label>Shares limit with (pool name)</label><input id="cpl" value="${esc(c.pool||'')}" placeholder="e.g. HDFC — blank if own limit"></div></div>
    <div class="f2"><div class="f"><label>Annual fee</label><input id="cf" value="${esc(c.fee)}"></div><div class="f"><label>Fee waived at spend (₹/yr)</label><input type="number" id="cw" value="${waiverOf(c)||''}"></div></div>
    <div class="f"><label>Note</label><input id="cno" value="${esc(c.note)}"></div>
    <div class="acts">${id?`<button class="btn dng" onclick="delCard('${id}')">Delete</button><span style="flex:1"></span>`:''}<button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="saveCard('${id||''}')">Save</button></div>`);
 }
 function saveCard(id){
   const name=val('cn');if(!name)return toast('Enter the card name');
-  const c={id:id||uid(),ok:!!id,name,last4:val('c4').replace(/\D/g,'').slice(-4),stmt:+val('cs')||1,due:+val('cd')||1,limit:+val('cl')||0,fee:val('cf'),waiver:+val('cw')||0,note:val('cno')};
+  const c={id:id||uid(),ok:!!id,name,last4:val('c4').replace(/\D/g,'').slice(-4),stmt:+val('cs')||1,due:+val('cd')||1,limit:+val('cl')||0,fee:val('cf'),waiver:+val('cw')||0,note:val('cno'),pool:val('cpl').trim()};
   const i=S.cards.findIndex(x=>x.id===id);if(i>=0)Object.assign(S.cards[i],c);else S.cards.push(c);
   const b=S.items.find(x=>x.cardId===c.id);
   if(b){b.name=c.name+' bill';b.day=c.due}else S.items.push({id:uid(),sec:(S.secs.find(x=>x.type==='card')||{k:'cards'}).k,name:c.name+' bill',amt:0,day:c.due,freq:'monthly',start:YM,remind:5,cardId:c.id});
@@ -1330,10 +1412,10 @@ function activityBox(){
   const L=(S.log||[]).filter(l=>logF==='all'||l.src===logF),sh=L.slice(0,logN);
   const tm=a=>{const d=new Date(a);return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})};
   const ic={You:'👤',Email:'📩',App:'⚙️'};
-  return `<section class="card2" style="--c:#64748b"><h3>📜 Activity log</h3>
+  return fold('mlog','📜 Activity log',(S.log||[]).length+' changes',`
    <div class="chips">${[['all','All'],['You','By you'],['Email','From email'],['App','App']].map(([k,l])=>`<button class="${logF===k?'on':''}" onclick="logF='${k}';logN=15;render()">${l}</button>`).join('')}</div>
    ${sh.map(l=>`<div class="row"><span class="cic" aria-hidden="true">${ic[l.src]||'•'}</span><div class="rb"><b style="white-space:normal">${esc(l.t)}</b><small>${esc(tm(l.at))}${l.s?' · '+esc(l.s):''}</small></div></div>`).join('')||'<div class="empty">Nothing yet. Every change will show here.</div>'}
-   ${L.length>logN?`<button class="more" onclick="logN+=30;render()">Show more (${L.length-logN})</button>`:''}</section>`;
+   ${L.length>logN?`<button class="more" onclick="logN+=30;render()">Show more (${L.length-logN})</button>`:''}`,'#64748b',false);
 }
 function setCash(){S.cash={amt:+val('cb')||0,date:today()};logA('You','Bank balance set to '+rs(S.cash.amt));save();closeModal();render()}
 function toggleSet(k){
