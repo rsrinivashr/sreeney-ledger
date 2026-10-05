@@ -170,7 +170,7 @@ button{cursor:pointer}
 .gh+.row,.mh+.row,h3+.row{border-top:0}
 .row .rb{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0}
 .row .rb b{display:block;font-weight:700;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .rb small{display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .rb small{display:block;font-size:12.5px;color:var(--muted);line-height:1.35}
 .st-over .rb small{color:var(--red);font-weight:600}.st-soon .rb small{color:var(--amber);font-weight:600}
 .st-paid .rb b,.st-paid .ra b{color:var(--muted);font-weight:600}
 .st-hold .rb b{color:var(--muted);text-decoration:line-through}
@@ -478,6 +478,11 @@ function runFixes6(){
   S.mailLog=(S.mailLog||[]).filter(l=>{const m=/(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})/.exec(l.s||'');if(!m)return true;return `${m[3]}-${pad2(MI[m[2]])}`>=START});
   S.fixes.f6=true;return true;
 }
+function runFixes7(){
+  S.fixes=S.fixes||{};if(S.fixes.f7)return false;
+  S.payers=S.payers||{};const dn=S.items.find(i=>/dn-can/i.test(i.name));if(dn)S.payers['nadeem nawaz']=dn.id;
+  S.fixes.f7=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -486,7 +491,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();runFixes();runFixes2();runFixes3();runFixes4();runFixes5();runFixes6();
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -510,7 +515,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6();if(fx1||fx2||fx3||fx4||fx5||fx6)save();else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -670,7 +675,9 @@ function reviewList(){
 function okReview(kind,id){const o=kind==='card'?card(id):S.items.find(i=>i.id===id);if(o){o.ok=true;save();render();toast('Confirmed',()=>{o.ok=false;save();render()})}}
 
 /* ---------- row (big, clean) ---------- */
-function when(x){
+function fromBank(m){m=String(m||'');const a=/^(.*?)\s*auto-?debit$/i.exec(m);return a?(a[1]?a[1]+' (auto)':'Auto-debit'):modeName(m)}
+function when(x){const w=when0(x);if(x.paid||x.st==='hold'||isIn(x.it))return w;const md=x.r.mode||lastMode(x.it);return md?w+' · from '+fromBank(md):tOf(x.it)==='loan'?w+' · bank not set':w}
+function when0(x){
   const inc=isIn(x.it);
   if(x.paid)return `${inc?'Received':'Paid'} ${dLabel(x.r.date||x.date)}${x.r.mode?' · '+modeName(x.r.mode):''}`;
   if(x.st==='hold')return "Don't pay";
@@ -731,7 +738,10 @@ function findIns(m){
   return null;
 }
 const FREQ_MONTHS=(f,mo)=>{f=String(f||'').toLowerCase();if(/month/.test(f))return null;if(/quarter/.test(f))return[0,3,6,9].map(k=>((mo-1+k)%12)+1).sort((a,b)=>a-b);if(/half/.test(f))return[mo,((mo+5)%12)+1].sort((a,b)=>a-b);return[mo]};
+function payerItem(m){S.payers=S.payers||{};const id=S.payers[String(m.payer||'').toLowerCase()];return id?S.items.find(i=>i.id===id):null}
 function mailText(m){
+  if(m.kind==='income'){const it=payerItem(m),e=it&&occurs(it,ymOf(m.date))?entry(it,ymOf(m.date)):null;
+    return{t:it?`${it.name} received ${rs(m.amt)}`:`${rs(m.amt)} from ${m.payer}`,s:`${dLabel(m.date)} · via ${m.via||'bank'}${m.cur&&m.cur!=='INR'?' · '+m.cur:''}${it?'':' · tap Assign to choose the income'}`,ok:!!e,dup:!!(e&&e.paid&&near(e.amt,m.amt)),f:it?{}:null,inc:e,assign:!it}}
   if(m.kind==='ins'){const it=findIns(m),d=m.paid?m.date:m.due;
     return{t:it?`${it.name} ${m.paid?'premium paid':'premium due'} ${rs(m.amt)}`:`New policy: ${m.insurer}${m.plan?' '+m.plan:''} ${rs(m.amt)}`,s:`${m.paid?'Paid':'Due'} ${dLabel(d)} ${d.slice(0,4)}${it?'':' · added to Insurance'}`,ok:true,f:{},ins:it}}
   if(m.kind==='loan'){const it=findLoan(m),ao=addM(ymOf(m.asOf),1),now=it?loanLeft(it,ymOf(today())):null,want=m.left-Math.max(0,mdiff(ao,ymOf(today())));
@@ -746,9 +756,9 @@ function mailText(m){
 function mailPending(){
   S.mailDone=S.mailDone||{};
   const cut=new Date(START+'-01T00:00');cut.setDate(cut.getDate()-10);const C=`${cut.getFullYear()}-${pad2(cut.getMonth()+1)}-${pad2(cut.getDate())}`;
-  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
+  return MAIL.filter(m=>!S.mailDone[m.id]&&((m.kind==='loan'||m.kind==='ins')?true:(m.kind==='paid'||m.kind==='debit')?(m.date||'')>=C:m.kind==='income'?(m.date||'')>=START+'-01':(m.due||m.date||'')>=START+'-01')&&!mailText(m).dup).sort((a,b)=>(b.at||0)-(a.at||0));
 }
-const AUTO_KINDS=['paid','bill','loan','debit'];
+const AUTO_KINDS=['paid','bill','loan','debit','income'];
 const autoKind=k=>k==='ins'||AUTO_KINDS.includes(k)||(k==='spend'&&S.autoSpend!==false);
 const CAT_RX=[['Groceries',/mart|kirana|supermarket|grocer|fresh|bigbasket|blinkit|zepto|instamart|dmart|avenue supermarts|ratnadeep|vegetable|milk/i],
  ['Fuel',/petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|filling|bunk/i],
@@ -765,8 +775,8 @@ function mailBox(){
   const L=mailPending().filter(m=>m.kind!=='ins'&&!(S.autoMail!==false&&autoKind(m.kind)&&mailText(m).ok));if(!L.length)return'';
   const sh=mailAll?L:L.slice(0,5),nOk=L.filter(m=>mailText(m).ok).length;
   return `<section class="card2" style="--c:#0f9488"><div class="mh"><div class="rb"><b>📩 From your email (${L.length})</b><small>Tap ✓ to add · ✕ to ignore</small></div>${nOk>1?`<button class="btn" style="height:36px" onclick="mailApplyAll()">Add all ${nOk}</button>`:''}</div>
-   ${sh.map(m=>{const x=mailText(m);return `<div class="row"><span class="cic" aria-hidden="true">${m.kind==='spend'?'💳':m.kind==='paid'||m.kind==='debit'?'✅':m.kind==='loan'?'🏦':'🧾'}</span><div class="rb"><b>${esc(x.t)}</b><small>${esc(x.s)}${x.f?'':' · card not in your list'}</small></div>
-    <button class="tk ed" onclick="mailDone('${m.id}')" aria-label="Ignore">✕</button>${x.ok?`<button class="tk okb" onclick="mailApply('${m.id}')" aria-label="Apply">✓</button>`:x.f?'':`<button class="tk ed" onclick="mailAddCard('${m.id}')" aria-label="Add card">＋</button>`}</div>`}).join('')}
+   ${sh.map(m=>{const x=mailText(m);return `<div class="row"><span class="cic" aria-hidden="true">${m.kind==='income'?'💰':m.kind==='spend'?'💳':m.kind==='paid'||m.kind==='debit'?'✅':m.kind==='loan'?'🏦':'🧾'}</span><div class="rb"><b>${esc(x.t)}</b><small>${esc(x.s)}${x.f||x.assign?'':' · card not in your list'}</small></div>
+    <button class="tk ed" onclick="mailDone('${m.id}')" aria-label="Ignore">✕</button>${x.assign?`<button class="btn" style="height:36px" onclick="assignPayer('${m.id}')">Assign</button>`:x.ok?`<button class="tk okb" onclick="mailApply('${m.id}')" aria-label="Apply">✓</button>`:x.f?'':`<button class="tk ed" onclick="mailAddCard('${m.id}')" aria-label="Add card">＋</button>`}</div>`}).join('')}
    ${L.length>5?`<button class="more" onclick="mailAll=!mailAll;render()">${mailAll?'Show less':'Show all '+L.length}</button>`:''}</section>`;
 }
 let logAll=false;
@@ -778,11 +788,24 @@ function autoLogBox(){
    ${sh.map(l=>`<div class="row"><span class="cic" aria-hidden="true">${l.ic||'✅'}</span><div class="rb"><b>${esc(l.t)}</b><small>${esc(l.s)}</small></div><button class="btn lnk" onclick="undoLog('${l.id}')">Undo</button></div>`).join('')}
    ${recent.length>3?`<button class="more" onclick="logAll=!logAll;render()">${logAll?'Show less':'Show all '+recent.length}</button>`:''}</section>`;
 }
+function assignPayer(id){
+  const m=MAIL.find(x=>x.id===id),inc=S.items.filter(i=>isIn(i));
+  openModal(`<h2>${rs(m.amt)} from ${esc(m.payer)}</h2><div class="sub">Pick the income this belongs to. Future payments from ${esc(m.payer)} go there automatically.</div>
+   <div class="f"><label>Income</label><select id="pi">${sel(inc.map(i=>[i.id,i.name]),'')}<option value="__new">+ New income source…</option></select></div>
+   <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="savePayer('${id}')">Save</button></div>`);
+}
+function savePayer(id){
+  const m=MAIL.find(x=>x.id===id);let v=val('pi');
+  if(v==='__new'){const it={id:uid(),sec:(S.secs.find(x=>x.type==='in')||S.secs[0]).k,name:m.payer,amt:0,day:+m.date.slice(8),freq:'monthly',start:START,remind:1,note:'Added from email'};S.items.push(it);v=it.id}
+  S.payers=S.payers||{};S.payers[String(m.payer).toLowerCase()]=v;closeModal();
+  if(!mailApply(id,true)){save();render();toast('Saved')}else{save();render();toast('Income recorded')}
+}
 function mailDone(id,quiet){S.mailDone=S.mailDone||{};S.mailDone[id]=1;if(!quiet){save();render()}}
 function mailApply(id,quiet,auto){
   const m=MAIL.find(x=>x.id===id);if(!m)return false;const x=mailText(m);if(!x.ok)return false;
   const U=[],recU=k=>U.push({t:'rec',key:k,prev:S.rec[k]?{...S.rec[k]}:null}),itU=it=>U.push({t:'item',id:it.id,prev:{...it}}),cU=c=>U.push({t:'card',id:c.id,prev:{...c}});
-  if(m.kind==='ins'){
+  if(m.kind==='income'){const e=x.inc;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.via||''}}
+  else if(m.kind==='ins'){
     const d=m.paid?m.date:m.due,mo=+d.slice(5,7),day=+d.slice(8),recent=daysTo(d)>=-45&&daysTo(d)<=150;let it=x.ins;
     if(!it&&!m.paid&&!recent){mailDone(id,true);return false}
     if(it&&!m.paid&&!m.freq&&it.freq==='monthly'){mailDone(id,true);return false}
@@ -815,7 +838,7 @@ function mailApply(id,quiet,auto){
     }
   }
   mailDone(id,true);
-  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
+  S.mailLog=S.mailLog||[];S.mailLog.unshift({id:uid(),mid:id,t:x.t,s:x.s,ic:m.kind==='income'?'💰':m.kind==='ins'?'🛡️':m.kind==='loan'?'🏦':m.kind==='bill'?'🧾':m.kind==='spend'?'💳':'✅',at:Date.now(),auto:!!auto,U});
   S.mailLog=S.mailLog.slice(0,60);
   if(!quiet){save();render();toast('Updated from email')}
   return true;
@@ -867,7 +890,7 @@ function salaryCheck(){
 }
 function cashForm(){openModal(`<h2>Money in bank</h2><div class="sub">Total you have right now across accounts. Used for the "before salary" check.</div>
   <div class="f"><label>Amount (₹)</label><input type="number" inputmode="decimal" id="cb" value="${S.cash?S.cash.amt:''}"></div>
-  <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="S.cash={amt:+val('cb')||0,date:today()};save();closeModal();render()">Save</button></div>`)}
+  <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="setCash()">Save</button></div>`)}
 function vPay(){
   const t=totals(YM),cur=ymOf(today()),rv=reviewList().length;
   const top=`<section class="sumbar">
@@ -925,7 +948,7 @@ function loanInsights(){
    ${next?`<div class="ins"><b>✅ Next to close: ${esc(next[0].name)}</b><small>${mName(next[1])} · frees up ${rs(next[0].amt)}/month</small></div>`:''}
    ${hi?`<div class="ins"><b>💡 Prepay first: ${esc(hi.name)}</b><small>Highest interest at ${hi.roi}% — extra money here saves the most</small></div>`:''}
    <button class="more" onclick="openSec.loans=!openSec.loans;render()">${openSec.loans?'Hide':'All '+ls.length+' loans'}</button>
-   ${openSec.loans?ls.slice().sort((a,b)=>(loanEnd(a)||'9').localeCompare(loanEnd(b)||'9')).map(i=>{const l=loanLeft(i,YM),e=loanEnd(i);return `<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${l!=null?l+' months left · ends '+mName(e):'tenure not set'}${i.roi?' · '+i.roi+'%':''}</small></button><div class="ra"><b>${rs(i.amt)}</b></div></div>`}).join(''):''}
+   ${openSec.loans?ls.slice().sort((a,b)=>(loanEnd(a)||'9').localeCompare(loanEnd(b)||'9')).map(i=>{const l=loanLeft(i,YM),e=loanEnd(i);return `<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${l!=null?l+' months left · ends '+mName(e):'tenure not set'}${i.roi?' · '+i.roi+'%':''} · ${lastMode(i)?'from '+esc(fromBank(lastMode(i))):'bank not set'}</small></button><div class="ra"><b>${rs(i.amt)}</b></div></div>`}).join(''):''}
   </section>`;
 }
 function cardInsights(){
@@ -1004,6 +1027,7 @@ function vManage(){
   <section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b><small>${S.cards.length} cards</small></div><button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button></div>
    ${cards.map(c=>`<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Statement ${ord(c.stmt)} · pay by ${ord(c.due)}${+c.limit?' · '+rs(c.limit):''}</small></button><button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete">🗑</button></div>`).join('')}</section>
   ${secs}
+  ${q?'':activityBox()}
   ${q?'':`<button class="btn wide" onclick="secForm()">＋ New box</button>
   <section class="card2" style="--c:#64748b"><h3>⚙️ Settings</h3><div class="setg">
    <button onclick="remindForm()">🔔 Alerts<small>${(S.remind??1)?(S.remind??1)+' day before':'On the due day'}</small></button>
@@ -1012,10 +1036,10 @@ function vManage(){
    <button onclick="enableNotif()">📣 Phone alerts<small>While app is open</small></button>
    <button onclick="modesForm()">💸 Payment modes<small>${S.modes.length} modes</small></button>
    <button onclick="catsForm()">🏷️ Expense categories<small>${S.cats.length} categories</small></button>
-   <button onclick="S.showHold=!S.showHold;save();render()">🚫 Don't-pay items<small>${S.showHold?'Shown':'Hidden'}</small></button>
+   <button onclick="toggleSet('showHold')">🚫 Don't-pay items<small>${S.showHold?'Shown':'Hidden'}</small></button>
    <button onclick="emailReader()">📩 Email reader<small>${MAIL.length?MAIL.length+' emails read':'Set up once'}</small></button>
-   <button onclick="S.autoSpend=S.autoSpend===false;save();render()">🧾 Auto-add card spends<small>${S.autoSpend===false?'Off · ask me first':'On · from card alerts'}</small></button>
-   <button onclick="S.autoMail=S.autoMail===false;save();render()">🔄 Auto-mark paid<small>${S.autoMail===false?'Off · ask me first':'On · from bank emails'}</small></button>
+   <button onclick="toggleSet('autoSpend')">🧾 Auto-add card spends<small>${S.autoSpend===false?'Off · ask me first':'On · from card alerts'}</small></button>
+   <button onclick="toggleSet('autoMail')">🔄 Auto-mark paid<small>${S.autoMail===false?'Off · ask me first':'On · from bank emails'}</small></button>
    <button onclick="cashForm()">🏦 Money in bank<small>${S.cash?rs(S.cash.amt):'Not set'}</small></button>
   </div></section>
   <section class="card2" style="--c:#0f9488"><h3>💾 Data</h3><div class="setg">
@@ -1132,7 +1156,7 @@ function editItem(id,secK){
    ${T==='loan'?`<div class="f2"><div class="f"><label>Months left (from start)</label><input type="number" id="el" value="${it.left||''}"></div><div class="f"><label>Interest %</label><input type="number" step="0.01" id="er" value="${it.roi||''}"></div></div>
      <div class="f"><label>Loan amount (₹)</label><input type="number" id="et" value="${it.loanAmt||''}"></div>`:''}
    ${T==='out'?`<div class="f2"><div class="f"><label>Ref / service no.</label><input id="ex" value="${esc(it.ref)}"></div><div class="f"><label>Place / for</label><input id="ep" value="${esc(it.place)}"></div></div>`:''}
-   <div class="f"><label>${inc?'Comes into':'Usually paid via'}</label><select id="em">${modeOpts(it.mode||'')}</select></div>
+   <div class="f"><label>${inc?'Comes into':T==='loan'?'EMI debited from (bank)':'Usually paid via'}</label><select id="em">${modeOpts(it.mode||'')}</select></div>
    <div class="f"><label>Note</label><input id="eno" value="${esc(it.note)}"></div>
    ${!inc?`<label class="chkl"><input type="checkbox" id="eh" ${it.hold?'checked':''}> Don't pay — track only (no reminders)</label>`:''}
    <div class="acts">${id?`<button class="btn dng" onclick="delItem('${id}')">Delete</button><span style="flex:1"></span>`:''}<button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="saveItem('${id||''}')">Save</button></div>`);
@@ -1234,7 +1258,7 @@ function saveSpend(id){const a=+val('sa');if(!a)return toast('Enter the amount')
 function delSpend(id){S.spends=S.spends.filter(x=>x.id!==id);save();closeModal();render();toast('Deleted')}
 function remindForm(){openModal(`<h2>Payment alerts</h2><div class="sub">Applies to every payment — cards, loans, insurance, bills, everything.</div>
   <div class="f"><label>Alert me this many days before the due date</label><select id="rd">${sel([[0,'On the due day only'],[1,'1 day before'],[2,'2 days before'],[3,'3 days before'],[5,'5 days before'],[7,'1 week before']],S.remind??1)}</select></div>
-  <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="S.remind=+val('rd');save();closeModal();render();toast('Alerts updated')">Save</button></div>`)}
+  <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="setRemind()">Save</button></div>`)}
 function catsForm(){openModal(`<h2>Expense categories</h2><div class="sub">One per line.</div><div class="f"><textarea id="mt" rows="10">${esc(S.cats.join('\n'))}</textarea></div><div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="S.cats=val('mt').split('\\n').map(x=>x.trim()).filter(Boolean);save();closeModal();toast('Saved')">Save</button></div>`)}
 function modesForm(){openModal(`<h2>Payment modes</h2><div class="sub">One per line. Cards are added from the Cards tab.</div><div class="f"><textarea id="mt" rows="10">${esc(S.modes.join('\n'))}</textarea></div><div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="S.modes=val('mt').split('\\n').map(x=>x.trim()).filter(Boolean);save();closeModal();toast('Saved')">Save</button></div>`)}
 
@@ -1266,6 +1290,51 @@ function exportCSV(){
 function resetSeed(){if(!confirm('Replace everything with the data from your Google Sheet? Paid ticks and expenses will be cleared.'))return;const p=S.pin;S=seed();S.pin=p;save();render();toast('Reset to sheet data')}
 
 initSync();
+
+/* ---------- activity log: every change is recorded ---------- */
+function logA(src,t,s){S.log=S.log||[];S.log.unshift({id:uid(),at:Date.now(),src,t:String(t||''),s:String(s||'')});if(S.log.length>500)S.log.length=500}
+let logF='all',logN=15;
+function activityBox(){
+  const L=(S.log||[]).filter(l=>logF==='all'||l.src===logF),sh=L.slice(0,logN);
+  const tm=a=>{const d=new Date(a);return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})};
+  const ic={You:'👤',Email:'📩',App:'⚙️'};
+  return `<section class="card2" style="--c:#64748b"><h3>📜 Activity log</h3>
+   <div class="chips">${[['all','All'],['You','By you'],['Email','From email'],['App','App']].map(([k,l])=>`<button class="${logF===k?'on':''}" onclick="logF='${k}';logN=15;render()">${l}</button>`).join('')}</div>
+   ${sh.map(l=>`<div class="row"><span class="cic" aria-hidden="true">${ic[l.src]||'•'}</span><div class="rb"><b style="white-space:normal">${esc(l.t)}</b><small>${esc(tm(l.at))}${l.s?' · '+esc(l.s):''}</small></div></div>`).join('')||'<div class="empty">Nothing yet. Every change will show here.</div>'}
+   ${L.length>logN?`<button class="more" onclick="logN+=30;render()">Show more (${L.length-logN})</button>`:''}</section>`;
+}
+function setCash(){S.cash={amt:+val('cb')||0,date:today()};logA('You','Bank balance set to '+rs(S.cash.amt));save();closeModal();render()}
+function toggleSet(k){
+  if(k==='showHold'){S.showHold=!S.showHold;logA('You',"Don't-pay items "+(S.showHold?'shown':'hidden'))}
+  if(k==='autoSpend'){S.autoSpend=S.autoSpend===false;logA('You','Auto-add card spends turned '+(S.autoSpend===false?'off':'on'))}
+  if(k==='autoMail'){S.autoMail=S.autoMail===false;logA('You','Auto-mark paid turned '+(S.autoMail===false?'off':'on'))}
+  save();render();
+}
+function setRemind(){S.remind=+val('rd');logA('You','Alerts set to '+(S.remind?S.remind+' day(s) before':'due day only'));save();closeModal();render();toast('Alerts updated')}
+(function(){
+  const W=(name,fn)=>{const o=window[name];if(typeof o!=='function')return;window[name]=function(...a){return fn(o,...a)}};
+  const itm=id=>S.items.find(i=>i.id===id),nm=id=>(itm(id)||{}).name||'Item';
+  const recOf=(id,ym)=>S.rec[id+'|'+ym]||{};
+  W('tickItem',(o,id,ym)=>{const b=!!recOf(id,ym).paid;const r=o(id,ym);const a=recOf(id,ym);if(!!a.paid!==b){const inc=itm(id)&&isIn(itm(id));logA('You',`${nm(id)} marked ${a.paid?(inc?'received':'paid'):(inc?'not received':'not paid')}${a.paid&&a.amt?' '+rs(a.amt):''}`,mName(ym))}return r});
+  W('setRec',(o,id,ym,paid)=>{const r=o(id,ym,paid);const a=recOf(id,ym);logA('You',`${nm(id)}: ${paid===true?'marked paid':paid===false?'marked not paid':'amount saved'}${a.amt!=null?' '+rs(a.amt):''}`,mName(ym)+(a.mode&&paid?' · '+modeName(a.mode):''));return r});
+  W('saveItem',(o,id)=>{const n=val('en'),had=!!itm(id),cnt=S.items.length;const r=o(id);if((had&&itm(id))||S.items.length>cnt)logA('You',`${had?'Edited':'Added'} ${n}`,secOf((S.items.find(i=>i.name===n)||{}).sec).t);return r});
+  W('delItem',(o,id)=>{const n=nm(id);const r=o(id);if(!itm(id))logA('You','Deleted '+n);return r});
+  W('saveCard',(o,id)=>{const n=val('cn'),had=!!card(id),cnt=S.cards.length;const r=o(id);if(had||S.cards.length>cnt)logA('You',`${had?'Edited':'Added'} card ${n}`);return r});
+  W('delCard',(o,id)=>{const c=card(id),n=c?c.name:'card';const r=o(id);if(!card(id))logA('You','Deleted card '+n);return r});
+  W('saveSpend',(o,id)=>{const a=val('sa'),w=val('sw'),cnt=S.spends.length;const r=o(id);if(id||S.spends.length>cnt)logA('You',`${id?'Edited':'Added'} expense ${rs(a)}${w?' · '+w:''}`);return r});
+  W('delSpend',(o,id)=>{const s=S.spends.find(x=>x.id===id);const r=o(id);if(s)logA('You',`Deleted expense ${rs(s.amount)}${s.desc?' · '+s.desc:''}`);return r});
+  W('qeSave',(o,mode)=>{const q={...QE};const r=o(mode);logA('You',`Added expense ${rs(q.amt)} · ${q.cat}`,modeName(mode));return r});
+  W('saveSec',(o,k)=>{const t=val('bt');const r=o(k);logA('You',`${k?'Edited':'Added'} box ${t}`);return r});
+  W('delSec',(o,k)=>{const s=S.secs.find(x=>x.k===k),t=s?s.t:'box';const r=o(k);if(!S.secs.find(x=>x.k===k))logA('You','Deleted box '+t);return r});
+  W('okReview',(o,kind,id)=>{const n=kind==='card'?(card(id)||{}).name:nm(id);const r=o(kind,id);logA('You','Confirmed '+n);return r});
+  W('undoLog',(o,lid)=>{const l=(S.mailLog||[]).find(x=>x.id===lid);const r=o(lid);if(l)logA('You','Undid: '+l.t);return r});
+  W('mailDone',(o,id,quiet)=>{const r=o(id,quiet);if(!quiet){const m=MAIL.find(x=>x.id===id);logA('You','Ignored email update'+(m?': '+mailText(m).t:''))}return r});
+  W('mailApply',(o,id,quiet,auto)=>{const m=MAIL.find(x=>x.id===id),x=m?mailText(m):null;const r=o(id,quiet,auto);if(r&&x)logA('Email',(x.t||'Email update')+(auto?'':' (you tapped ✓)'),x.s);return r});
+  W('savePayer',(o,id)=>{const m=MAIL.find(x=>x.id===id);const r=o(id);if(m)logA('You',`Payments from ${m.payer} now go to ${((itm(S.payers[String(m.payer).toLowerCase()])||{}).name)||'income'}`);return r});
+  W('resetSeed',(o)=>{const r=o();logA('You','Reset to sheet data');save();return r});
+  W('importJSON',(o,f)=>{const r=o(f);setTimeout(()=>{logA('You','Restored from backup');save()},800);return r});
+  W('pinDone',(o)=>{const b=S.pin;const r=o();if(S.pin!==b&&b!==null)logA('You','PIN changed');return r});
+})();
 </script>
 </body>
 </html>
