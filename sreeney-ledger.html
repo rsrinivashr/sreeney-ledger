@@ -228,6 +228,8 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#fca5a5}
 .dn{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.dn svg{width:170px;height:170px;flex:none}
 .dl{flex:1;min-width:180px}.dl div{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13.5px}.dl i{width:10px;height:10px;border-radius:3px;flex:none}.dl span{flex:1}.dl b{font-variant-numeric:tabular-nums}
 .ins.hot{border-top:0;background:var(--amb);border-radius:10px;padding:10px;margin:6px 0}.ins.hot b{color:var(--amber)}
+.pendbar{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;background:var(--acsoft);border-radius:12px;padding:10px 12px;margin:8px 0 4px}
+.pendbar span{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--accent)}.pendbar b{font-size:20px;font-weight:800;margin-left:auto}.pendbar small{width:100%;font-size:12px;color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;z-index:70;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
 .toast button{background:none;border:0;color:#7fb0ff;font-weight:800}
 
@@ -506,6 +508,11 @@ function runFixes8(){
   const amz=S.cards.find(cd=>/icici amazon/i.test(cd.name));if(amz&&!(+amz.limit))amz.limit=1300000;
   S.fixes.f8=true;return true;
 }
+function runFixes9(){
+  S.fixes=S.fixes||{};if(S.fixes.f9)return false;let n=0;
+  S.items.forEach(i=>{if(i.freq==='once'&&i.date&&i.start&&i.start>ymOf(i.date)){const[y,m]=i.start.split('-').map(Number),last=new Date(y,m,0).getDate();i.date=`${i.start}-${pad2(Math.min(+i.date.slice(8)||1,last))}`;i.day=+i.date.slice(8);n++}});
+  S.fixes.f9=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -514,7 +521,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -538,7 +545,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -660,6 +667,7 @@ function shiftM(n){YM=addM(YM,n);render()}
 function tick(){const d=new Date();$('#clock').textContent=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
 tick();setInterval(tick,15000);
 function render(){
+  if(remOpen&&$('#modal').innerHTML)setTimeout(()=>{if(remOpen)showReminders(false)},0);
   try{localStorage.setItem('sl.folds',JSON.stringify(openSec))}catch(e){}
   $('#mLabel').textContent=mName(YM);
   const keep=document.activeElement&&document.activeElement.id;
@@ -683,7 +691,8 @@ function totals(ym){
     due:out.filter(x=>!x.paid).reduce((a,x)=>a+x.amt,0),dueN:out.filter(x=>!x.paid).length,spent:sp.reduce((a,s)=>a+ +s.amount,0)};
 }
 function earlierOverdue(){const cur=ymOf(today()),r=[];for(let k=12;k>=1;k--){const ym=addM(cur,-k);if(ym<START)continue;entries(ym).forEach(x=>{if(!isIn(x.it)&&x.st==='over')r.push(x)})}return r}
-function alertsNow(){
+function alertsNow(){return alertsNow0().filter(x=>!x.paid)}
+function alertsNow0(){
   const cur=ymOf(today()),r=earlierOverdue();
   entries(cur).forEach(x=>{if(!isIn(x.it)&&(x.st==='over'||x.st==='soon'))r.push(x)});
   entries(addM(cur,1)).forEach(x=>{if(!isIn(x.it)&&x.st==='soon')r.push(x)});
@@ -994,7 +1003,9 @@ function vPay(){
     const nxt=YM===cur?entries(addM(cur,1)).filter(x=>matchChip(x.it)&&!x.it.hold&&!x.paid&&x.n>=0&&x.n<=13):[];
     const over=g(x=>!x.paid&&x.st!=='hold'&&x.n<0),wk=g(x=>!x.paid&&x.st!=='hold'&&x.n>=0&&x.n<=6),nw=[...g(x=>!x.paid&&x.st!=='hold'&&x.n>=7&&x.n<=13),...nxt],later=g(x=>!x.paid&&x.st!=='hold'&&x.n>13),paid=g(x=>x.paid),hold=g(x=>x.st==='hold');
     const grp=(t,cls,a)=>a.length?`<div class="gh ${cls}">${t}<span>${rs(a.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0))}</span></div>${a.map(row).join('')}`:'';
+    const pend=[...early,...es.filter(x=>!x.paid&&x.st!=='hold')],pendAmt=pend.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0);
     body=`<section class="list">
+      <div class="pendbar"><span>${inc?'Still to come this month':'Pending this month'}</span><b>${rs(pendAmt)}</b><small>${pend.length} item${pend.length===1?'':'s'} · excludes ${inc?'received':'paid'}</small></div>
       ${grp('From earlier months','r',early)}${grp(inc?'Late':'Overdue','r',over)}${grp(inc?'Expected this week':'This week','a',wk)}${grp(inc?'Expected next week':'Next week','',nw)}
       ${later.length?`<button class="gh fold" onclick="togF('later',false)">Later · ${later.length}<span>${rs(later.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0))} ${isOpen('later',false)?'▴':'▾'}</span></button>${isOpen('later',false)?later.map(row).join(''):''}`:''}
       ${paid.length?`<button class="gh g fold" onclick="showPaid=!showPaid;render()">${inc?'Received':'Paid'} · ${paid.length}<span>${rs(paid.reduce((s,x)=>s+x.amt,0))} ${showPaid?'▴':'▾'}</span></button>${showPaid?paid.map(row).join(''):''}`:''}
@@ -1153,6 +1164,7 @@ function vManage(){
   ${fold('mdata','💾 Data','Backup, restore, export',`<div class="setg">
    <button onclick="exportJSON()">⬇️ Back up<small>Download a copy</small></button>
    <button onclick="$('#imp').click()">⬆️ Restore<small>From a backup</small></button>
+   <button onclick="exportXLSX()">📊 Export to Excel<small>All data, one sheet per area</small></button>
    <button onclick="exportCSV()">📄 Export month<small>CSV for sheets</small></button>
    <button onclick="resetSeed()">↺ Reset<small>Back to sheet data</small></button>
    ${typeof signOut==='function'?'<button onclick="signOut()">🚪 Sign out<small>Clears this device</small></button>':''}
@@ -1223,7 +1235,7 @@ function tickItem(id,ym){
   toast(isIn(it)?'Received ✓':'Paid ✓',()=>{if(prev)S.rec[x.key]=prev;else delete S.rec[x.key];save();render()});
 }
 function openModal(h){$('#modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeModal()"><div class="sheet" role="dialog" aria-modal="true">${h}</div></div>`;const f=$('#modal input,#modal select');if(f&&matchMedia('(min-width:760px)').matches)f.focus()}
-function closeModal(){$('#modal').innerHTML=''}
+function closeModal(){$('#modal').innerHTML='';remOpen=false}
 function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
 function openItem(id,ym){
   const it=S.items.find(i=>i.id===id),x=entry(it,ym),inc=isIn(it),la=lastAmt(it,ym);
@@ -1378,8 +1390,9 @@ function modesForm(){openModal(`<h2>Payment modes</h2><div class="sub">One per l
 
 /* ---------- reminders ---------- */
 function updateBell(){const n=alertsNow().length,b=$('#bellN');b.textContent=n;b.classList.toggle('hide',!n)}
+let remOpen=false;
 function showReminders(auto){
-  const a=alertsNow();if(auto&&!a.length)return;
+  const a=alertsNow().filter(x=>!x.paid&&!(S.rec[x.key]&&S.rec[x.key].paid));if(auto&&!a.length)return;remOpen=true;
   openModal(`<h2>${a.length?'Needs your attention':'All clear'}</h2><div class="sub">${a.length?'Overdue and due in the next few days':'Nothing overdue or due soon.'}</div>${a.map(row).join('')}<div class="acts"><button class="btn pri" onclick="closeModal()">Close</button></div>`);
   pushNotifs(a);
 }
@@ -1400,6 +1413,21 @@ function exportCSV(){
   entries(YM).forEach(x=>rows.push([secOf(x.it.sec).t,x.it.name,x.date,x.amt,stLabel(x),x.r.date||'',modeName(x.r.mode||''),x.it.note||'']));
   spendsIn(YM).forEach(s=>rows.push(['Expense',s.desc||s.cat,s.date,s.amount,'Paid',s.date,modeName(s.mode),s.kind]));
   dl(`sreeney-ledger-${YM}.csv`,rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv');toast('CSV downloaded');
+}
+function loadXLSX(){return new Promise((ok,no)=>{if(window.XLSX)return ok(window.XLSX);const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>ok(window.XLSX);s.onerror=()=>no(new Error('load'));document.head.appendChild(s)})}
+async function exportXLSX(){
+  toast('Preparing Excel file…');let X;try{X=await loadXLSX()}catch(e){return toast('Could not load the Excel tool — check internet and try again')}
+  const months=[];for(let ym=START;ym<=addM(ymOf(today()),1);ym=addM(ym,1))months.push(ym);
+  const pay=[],inc=[];
+  months.forEach(ym=>entries(ym).forEach(x=>{const r={Month:mName(ym),Box:secOf(x.it.sec).t,Type:tagOf(x.it),Name:x.it.name,Due:x.date,Amount:x.amt||null,Status:stLabel(x),'Paid on':x.r.date||'','Paid with':x.r.mode?modeName(x.r.mode):'',Ref:x.it.ref||'',Note:x.it.note||''};
+    if(isIn(x.it))inc.push({Month:r.Month,Source:x.it.name,Expected:x.date,Amount:r.Amount,Status:x.paid?'Received':'Pending','Received on':x.r.date||'',Via:x.r.mode||''});else pay.push(r)}));
+  const loans=S.items.filter(i=>tOf(i)==='loan').map(i=>({Type:tagOf(i),Name:i.name,'EMI':+i.amt||null,'Due day':i.day,'Months left':loanLeft(i,ymOf(today())),'Ends':loanEnd(i)?mName(loanEnd(i)):'','Interest %':+i.roi||null,'Loan amount':+i.loanAmt||null,'Principal left':+i.principalLeft||null,'Still to pay':Math.round(toPay(i,ymOf(today())))||null,'Amount paid so far':+i.paidAmt||null,'Principal paid':+i.principalPaid||null,'Sanction date':i.sanction||'','Closing date':i.closing||'','Debited from':lastMode(i)?modeName(lastMode(i)):'','Inside card bill':i.inBill?'Yes':''}));
+  const cards=S.cards.map(c=>({Card:c.name,'Last 4':c.last4||'','Statement day':c.stmt,'Pay-by day':c.due,'Limit':+c.limit||null,'Shared pool':c.pool||'','Used this month':cardUse(c,ymOf(today())),'Annual fee':c.fee||'','Fee waiver at (₹/yr)':waiverOf(c)||null,Note:c.note||''}));
+  const exps=S.spends.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(s=>({Date:s.date,'What for':s.desc||'',Category:s.cat,Type:s.kind||'','Paid with':modeName(s.mode),Amount:+s.amount,Source:s.auto?'Email':'You'}));
+  const log=(S.log||[]).map(l=>({When:new Date(l.at).toLocaleString('en-IN'),By:l.src,Change:l.t,Details:l.s||''}));
+  const wb=X.utils.book_new(),add=(name,rows,w)=>{const ws=X.utils.json_to_sheet(rows.length?rows:[{Info:'No data yet'}]);if(rows.length)ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(10,Math.min(40,k.length+2,...rows.slice(0,200).map(r=>String(r[k]??'').length+2)))}));X.utils.book_append_sheet(wb,ws,name)};
+  add('Payments',pay);add('Loans',loans);add('Cards',cards);add('Income',inc);add('Expenses',exps);add('Activity log',log);
+  X.writeFile(wb,`sreeney-ledger-${today()}.xlsx`);logA('You','Exported all data to Excel');save();toast('Excel file downloaded');
 }
 function resetSeed(){if(!confirm('Replace everything with the data from your Google Sheet? Paid ticks and expenses will be cleared.'))return;const p=S.pin;S=seed();S.pin=p;save();render();toast('Reset to sheet data')}
 
