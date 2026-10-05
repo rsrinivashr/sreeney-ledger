@@ -9,7 +9,7 @@
 const SYNC_CODE = 'oGdxwAXEs2cDPD8KWEfSkkEKnLx1';   // your sync code (already filled in)
 const PROJECT   = 'sreeney-ledger';
 
-const SENDERS = 'from:idfcfirstbank.com OR from:tatacapital.com OR from:poonawallafincorp.com OR from:cred.club OR from:hdfcbank.bank.in OR from:hdfcbank.net OR from:indusind.com OR from:sbicard.com OR from:bobcard.in OR from:icicibank.com OR from:axisbank.com OR from:axis.bank.in OR from:icici.bank.in OR from:hdfclife.com OR from:licindia.com OR from:licindia.in OR from:axismaxlife.com OR from:maxlifeinsurance.com OR from:icicipru.com OR from:icicilombard.com OR from:starhealth.in OR from:sbilife.co.in OR from:tataaia.com OR from:bajajallianz.co.in OR from:nivabupa.com OR from:careinsurance.com';
+const SENDERS = 'from:amazonpay.in OR from:wise.com OR from:idfcfirstbank.com OR from:tatacapital.com OR from:poonawallafincorp.com OR from:cred.club OR from:hdfcbank.bank.in OR from:hdfcbank.net OR from:indusind.com OR from:sbicard.com OR from:bobcard.in OR from:icicibank.com OR from:axisbank.com OR from:axis.bank.in OR from:icici.bank.in OR from:hdfclife.com OR from:licindia.com OR from:licindia.in OR from:axismaxlife.com OR from:maxlifeinsurance.com OR from:icicipru.com OR from:icicilombard.com OR from:starhealth.in OR from:sbilife.co.in OR from:tataaia.com OR from:bajajallianz.co.in OR from:nivabupa.com OR from:careinsurance.com';
 function canonIns(f) {
   f = String(f || '').toLowerCase();
   const L = [['LIC', /licindia|@lic\./], ['HDFC Life', /hdfclife/], ['Axis Max Life', /maxlife|axismaxlife/], ['ICICI Pru', /icicipru/], ['ICICI Lombard', /icicilombard/],
@@ -43,14 +43,15 @@ function syncEmails(firstRun) {
     const id = m.getId();
     if (props.getProperty('m_' + id)) return;
     const s = parse(m);
-    if (s) { s.id = id; s.subj = m.getSubject().slice(0, 120); s.at = m.getDate().getTime(); save(id, s); sent++; }
-    props.setProperty('m_' + id, '1');
+    if (s) { s.id = id; s.subj = m.getSubject().slice(0, 120); s.at = m.getDate().getTime(); save(id, s); sent++; props.setProperty('m_' + id, '1'); }
   }));
   Logger.log('Suggestions sent: ' + sent);
 }
 
 function clean(m) {
-  let t = m.getPlainBody() || m.getBody() || '';
+  const html = /amazonpay/i.test(m.getFrom());
+  let t = (html ? m.getBody() : m.getPlainBody()) || m.getBody() || '';
+  t = t.replace(/<style[\s\S]*?<\/style>/gi, ' ');
   t = t.replace(/\[[^\]]*\]\([^)]*\)/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;|&#160;/g, ' ')
        .replace(/&amp;/g, '&').replace(/[|*]/g, ' ').replace(/\s+/g, ' ');
   return t;
@@ -63,6 +64,29 @@ function monName(s) { return MON[String(s).slice(0, 3).toLowerCase()]; }
 function parse(m) {
   const from = m.getFrom().toLowerCase(), subj = m.getSubject(), t = clean(m);
   let r;
+  // Wise: money received from someone (income)
+  if (from.indexOf('wise.com') > -1 && /got paid by/i.test(subj)) {
+    r = /has sent you\s*([\d,]+(?:\.\d+)?)\s*([A-Z]{3})/.exec(t);
+    const payer = (/got paid by\s*(.+)$/i.exec(subj) || [])[1];
+    if (r && payer) return {kind: 'income', via: 'Wise', payer: payer.trim(), amt: num(r[1]), cur: r[2],
+                            date: Utilities.formatDate(m.getDate(), 'Asia/Kolkata', 'yyyy-MM-dd')};
+  }
+  // Amazon Pay: electricity / water bill paid (matched by USC / subscriber number)
+  if (from.indexOf('amazonpay') > -1 && /bill payment for Rs\.?\s*[\d,.]+\s*is successful/i.test(subj)) {
+    const a = /bill payment for Rs\.?\s*([\d,]+(?:\.\d+)?)/i.exec(subj), id = /Subscriber Id\s*:?\s*(\d{6,})/i.exec(t), ty = /(Electricity|Water|Gas)/i.exec(subj);
+    if (a) return {kind: 'util', paid: true, util: ty ? ty[1] : 'Bill', ref: id ? id[1] : '', amt: num(a[1]),
+                   date: Utilities.formatDate(m.getDate(), 'Asia/Kolkata', 'yyyy-MM-dd')};
+  }
+  // Amazon Pay: electricity / water bill due reminder
+  if (from.indexOf('amazonpay') > -1 && /(electricity|water|gas) bill payment (?:is|was) due/i.test(t)) {
+    const ty = /(electricity|water|gas) bill payment/i.exec(t), d = /bill payment (?:is|was) due (?:on\s*(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})|today)/i.exec(t),
+          a = /Due for\s+Amount\s+.*?₹\s*([\d,]+(?:\.\d+)?)/i.exec(t), id = /USC No\.?\s*:?\s*(\d{6,})/i.exec(t);
+    if (a && d) return {kind: 'util', paid: false, util: ty[1], ref: id ? id[1] : '', amt: num(a[1]),
+                        due: d[1] ? ymd(d[3], monName(d[2]), d[1]) : Utilities.formatDate(m.getDate(), 'Asia/Kolkata', 'yyyy-MM-dd')};
+  }
+  // HDFC account auto-debit (ACH / NACH) for loan EMIs
+  r = /Rs\.?\s*(?:INR\s*)?([\d,]+(?:\.\d+)?)\s*is deducted from your account ending\s*X*(\d{4})\s*and added to\s*(?:N?ACH)\s*D-\s*(.+?)-\d+\s*account on\s*(\d{2})-([A-Za-z]{3})-(\d{4})/i.exec(t);
+  if (r) return {kind: 'debit', ach: true, loan: true, bank: 'HDFC', acct: r[2], amt: num(r[1]), to: r[3].trim(), date: ymd(r[6], monName(r[5]), r[4])};
   // CRED: payment successful
   if (from.indexOf('cred.club') > -1 && /payment was successful/i.test(subj + t)) {
     r = /([A-Za-z][A-Za-z ]{1,25}?)\s*[•·.]{2,}\s*(\d{4}).*?amount paid\s*₹\s*([\d,]+(?:\.\d+)?).*?payment date\s*([A-Za-z]{3})[a-z]*\s+(\d{1,2}),\s*(\d{4})/i.exec(t);
