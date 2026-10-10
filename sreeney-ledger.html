@@ -513,6 +513,14 @@ function runFixes9(){
   S.items.forEach(i=>{if(i.freq==='once'&&i.date&&i.start&&i.start>ymOf(i.date)){const[y,m]=i.start.split('-').map(Number),last=new Date(y,m,0).getDate();i.date=`${i.start}-${pad2(Math.min(+i.date.slice(8)||1,last))}`;i.day=+i.date.slice(8);n++}});
   S.fixes.f9=true;return true;
 }
+function runFixes10(){
+  S.fixes=S.fixes||{};if(S.fixes.f10)return false;
+  const p=S.items.find(i=>tOf(i)==='loan'&&/poonaw/i.test(i.name));
+  if(p){Object.assign(p,{name:'Poonawalla 3.75L',amt:14516,day:5,start:'2026-10',asOf:'2026-11',left:30,roi:23,loanAmt:375000,principalLeft:331238,plAsOf:'2026-10-06',paidAmt:87096,principalPaid:43762,sanction:'2026-03-26',closing:'2029-04-05',mode:'ICICI auto-debit',note:'',ok:true});p.pending=p.left*p.amt;
+    const k=p.id+'|2026-10';if(!(S.rec[k]&&S.rec[k].paid))S.rec[k]={amt:14516,paid:true,date:'2026-10-05',mode:'ICICI auto-debit (NACH)'};
+    logA('App','Poonawalla loan updated from statement','30 EMIs left · ends Apr 2029 · Oct EMI marked paid')}
+  S.fixes.f10=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -521,7 +529,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -545,7 +553,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -1164,7 +1172,7 @@ function vManage(){
   ${fold('mdata','💾 Data','Backup, restore, export',`<div class="setg">
    <button onclick="exportJSON()">⬇️ Back up<small>Download a copy</small></button>
    <button onclick="$('#imp').click()">⬆️ Restore<small>From a backup</small></button>
-   <button onclick="exportXLSX()">📊 Export to Excel<small>All data, one sheet per area</small></button>
+   <button onclick="exportXLSX()">📊 Export to Excel<small>Full history · 9 sheets</small></button>
    <button onclick="exportCSV()">📄 Export month<small>CSV for sheets</small></button>
    <button onclick="resetSeed()">↺ Reset<small>Back to sheet data</small></button>
    ${typeof signOut==='function'?'<button onclick="signOut()">🚪 Sign out<small>Clears this device</small></button>':''}
@@ -1425,8 +1433,15 @@ async function exportXLSX(){
   const cards=S.cards.map(c=>({Card:c.name,'Last 4':c.last4||'','Statement day':c.stmt,'Pay-by day':c.due,'Limit':+c.limit||null,'Shared pool':c.pool||'','Used this month':cardUse(c,ymOf(today())),'Annual fee':c.fee||'','Fee waiver at (₹/yr)':waiverOf(c)||null,Note:c.note||''}));
   const exps=S.spends.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(s=>({Date:s.date,'What for':s.desc||'',Category:s.cat,Type:s.kind||'','Paid with':modeName(s.mode),Amount:+s.amount,Source:s.auto?'Email':'You'}));
   const log=(S.log||[]).map(l=>({When:new Date(l.at).toLocaleString('en-IN'),By:l.src,Change:l.t,Details:l.s||''}));
+  const summ=months.map(ym=>{const t=totals(ym),n=monthNums(ym),own=S.items.filter(i=>tOf(i)==='loan'&&!i.inBill&&!i.hold&&occurs(i,ym));
+    return{Month:mName(ym),'Came in':n.inn,'Paid out':n.out,'Saved / short':n.saved,'Still to pay':t.due,'Items unpaid':t.dueN,'Expenses (all modes)':t.spent,'EMI total':own.reduce((a,i)=>a+(+i.amt||0),0)}});
+  const mailRows=(S.mailLog||[]).slice().reverse().map(l=>({When:new Date(l.at).toLocaleString('en-IN'),Update:l.t,Details:l.s||'',How:l.auto?'Automatic':'You tapped ✓',Status:l.undone?'Undone':'Applied'}));
+  (S.log||[]).filter(l=>l.src==='Email').forEach(l=>{if(!mailRows.some(r=>r.Update===l.t))mailRows.push({When:new Date(l.at).toLocaleString('en-IN'),Update:l.t,Details:l.s||'',How:'Automatic',Status:'Applied'})});
+  const freqTxt=i=>i.freq==='once'?'One time · '+(i.date||''):i.freq==='months'?'Months: '+(i.months||[]).map(m=>MN[m-1]).join(', '):'Monthly';
+  const master=[...S.items.map(i=>({Kind:tagOf(i),Box:secOf(i.sec).t,Name:i.name,Amount:+i.amt||null,'Due day':i.freq==='once'?'':i.day,Frequency:freqTxt(i),'Start':i.start||'','Paid via':lastMode(i)?modeName(lastMode(i)):'','Ref / USC':i.ref||'',Place:i.place||'',"Don't pay":i.hold?'Yes':'',Note:i.note||''})),
+    ...S.cards.map(c=>({Kind:'CARD',Box:'Credit cards',Name:c.name+(c.last4?' ••'+c.last4:''),Amount:+c.limit||null,'Due day':c.due,Frequency:'Statement '+ord(c.stmt),'Start':'','Paid via':'','Ref / USC':'',Place:c.pool?c.pool+' pool':'',"Don't pay":'',Note:c.note||''}))];
   const wb=X.utils.book_new(),add=(name,rows,w)=>{const ws=X.utils.json_to_sheet(rows.length?rows:[{Info:'No data yet'}]);if(rows.length)ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(10,Math.min(40,k.length+2,...rows.slice(0,200).map(r=>String(r[k]??'').length+2)))}));X.utils.book_append_sheet(wb,ws,name)};
-  add('Payments',pay);add('Loans',loans);add('Cards',cards);add('Income',inc);add('Expenses',exps);add('Activity log',log);
+  add('Monthly summary',summ);add('Payments',pay);add('Loans',loans);add('Cards',cards);add('Income',inc);add('Expenses',exps);add('Email updates',mailRows);add('Master list',master);add('Activity log',log);
   X.writeFile(wb,`sreeney-ledger-${today()}.xlsx`);logA('You','Exported all data to Excel');save();toast('Excel file downloaded');
 }
 function resetSeed(){if(!confirm('Replace everything with the data from your Google Sheet? Paid ticks and expenses will be cleared.'))return;const p=S.pin;S=seed();S.pin=p;save();render();toast('Reset to sheet data')}
