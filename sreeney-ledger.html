@@ -521,6 +521,16 @@ function runFixes10(){
     logA('App','Poonawalla loan updated from statement','30 EMIs left · ends Apr 2029 · Oct EMI marked paid')}
   S.fixes.f10=true;return true;
 }
+function runFixes11(){
+  S.fixes=S.fixes||{};if(S.fixes.f11)return false;
+  const L=[[60000,4600000,7.75,18],[36371,2600000,8.25,84],[31393,1500000,8.10,35],[23740,1500000,8.25,54],[2765,131628,8.25,32],[1717,82685,8.25,43],[858,40986,8.10,35]];
+  const pool=S.items.filter(i=>tOf(i)==='loan'&&!/jumbo|insta/i.test(i.name));let n=0;
+  L.forEach(([emi,la,roi,left])=>{const p=pool.find(i=>+i.amt===emi)||pool.find(i=>+i.loanAmt===la&&/hdfc|top-?up|insurance|home/i.test(i.name));if(!p)return;
+    Object.assign(p,{roi,left,asOf:'2026-11',loanAmt:la});if('pending' in p)p.pending=left*(+p.amt||emi);
+    const k=p.id+'|2026-10';if(!(S.rec[k]&&S.rec[k].paid))S.rec[k]={amt:+p.amt||emi,paid:true,date:'2026-10-05',mode:p.mode||'Auto-debit'};n++});
+  if(n)logA('App','HDFC loans updated from your sheet',n+' loans · months left counted from Nov · new rates');
+  S.fixes.f11=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -529,7 +539,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -553,7 +563,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -1105,7 +1115,7 @@ function vSummary(){
   </section>
   ${donut()}${loanInsights()}${cardInsights()}
   ${fold('sTrend','📊 Last 12 months','Money in vs out',chart(),'#0f7a3d',false)}
-  ${fold('sBox','🗂️ Paid by box','Paid vs planned',boxes||'<div class="empty">Nothing due.</div>','#c9860f',false)}
+  ${fold('sBox','🗂️ Paid by category','Paid vs planned',boxes||'<div class="empty">Nothing due.</div>','#c9860f',false)}
   ${Object.keys(cats).length?fold('sCat','🧾 Expenses by category',shortRs(Object.values(cats).reduce((a,b)=>a+b,0))+' this month',Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<div class="row"><span class="cic">${catIc(k)}</span><div class="rb"><b>${esc(k)}</b></div><div class="ra"><b>${rs(v)}</b></div></div>`).join(''),'#64748b',false):''}`;
 }
 function shareReport(){
