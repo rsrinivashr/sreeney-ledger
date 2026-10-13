@@ -1040,9 +1040,11 @@ function trend(a,b,goodUp){if(b==null)return'';const d=a-b;if(!d)return'<em>same
 function chart(){
   const months=[];for(let k=11;k>=0;k--){const ym=addM(YM,-k);if(ym>=START)months.push(ym)}
   const data=months.map(m=>monthNums(m)),mx=Math.max(1,...data.map(d=>Math.max(d.inn,d.out)));
-  const W=600,H=170,bw=Math.min(22,W/months.length/3);
-  const bars=months.map((m,i)=>{const cx=(i+.5)*W/months.length,d=data[i],hi=d.inn/mx*130,ho=d.out/mx*130;
-    return `<rect x="${cx-bw-1}" y="${140-hi}" width="${bw}" height="${hi}" rx="3" fill="var(--green)"/><rect x="${cx+1}" y="${140-ho}" width="${bw}" height="${ho}" rx="3" fill="var(--red)"/><text x="${cx}" y="160" text-anchor="middle" font-size="12" fill="var(--muted)">${MN[+m.slice(5)-1]}</text>`}).join('');
+  const W=600,H=170,bw=Math.min(60,W/months.length/3);
+  const rot=months.length>6,lab=(v,x,h)=>{if(!v)return'';const t=rot?shortRs(v).slice(1):shortRs(v),y=136-h;
+    return rot?`<text x="${x}" y="${y}" transform="rotate(-90 ${x} ${y})" font-size="15" font-weight="700" fill="var(--text)" dominant-baseline="middle">${t}</text>`:`<text x="${x}" y="${y}" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text)">${t}</text>`};
+  const bars=months.map((m,i)=>{const cx=(i+.5)*W/months.length,d=data[i],hi=d.inn/mx*100,ho=d.out/mx*100;
+    return `<rect x="${cx-bw-1}" y="${140-hi}" width="${bw}" height="${hi}" rx="3" fill="var(--green)"/><rect x="${cx+1}" y="${140-ho}" width="${bw}" height="${ho}" rx="3" fill="var(--red)"/>${lab(d.inn,cx-1-bw/2,hi)}${lab(d.out,cx+1+bw/2,ho)}<text x="${cx}" y="160" text-anchor="middle" font-size="12" fill="var(--muted)">${MN[+m.slice(5)-1]}</text>`}).join('');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Money in and out by month" style="width:100%;height:auto"><line x1="0" y1="140" x2="${W}" y2="140" stroke="var(--border)"/>${bars}</svg>
    <div class="legend"><span><i style="background:var(--green)"></i>Came in</span><span><i style="background:var(--red)"></i>Paid out</span>${months.length<3?'<span>Builds up month by month</span>':''}</div>`;
 }
