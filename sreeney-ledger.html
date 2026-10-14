@@ -100,9 +100,9 @@ button{cursor:pointer}
 .st-over .chk{border-color:var(--red)}.st-soon .chk{border-color:var(--amber)}
 .st-hold .chk{background:var(--alt);color:var(--muted)}
 .rb{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0}
-.rb b{display:block;font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rb b{display:block;font-weight:600;font-size:14.5px;white-space:normal;overflow-wrap:anywhere}
 .st-hold .rb b{color:var(--muted);text-decoration:line-through}
-.rb small{display:block;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rb small{display:block;color:var(--muted);font-size:12px;white-space:normal;overflow-wrap:anywhere}
 .ra{text-align:right;white-space:nowrap}
 .ra b{display:block;font-weight:700;font-variant-numeric:tabular-nums;font-size:14.5px}
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-top:2px}
@@ -169,7 +169,7 @@ button{cursor:pointer}
 .row{display:flex;align-items:center;gap:10px;min-height:58px;padding:6px 0;border-top:1px solid var(--border)}
 .gh+.row,.mh+.row,h3+.row{border-top:0}
 .row .rb{flex:1;min-width:0;text-align:left;background:none;border:0;padding:0}
-.row .rb b{display:block;font-weight:700;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .rb b{display:block;font-weight:700;font-size:15.5px;white-space:normal;overflow-wrap:anywhere}
 .row .rb small{display:block;font-size:12.5px;color:var(--muted);line-height:1.35}
 .st-over .rb small{color:var(--red);font-weight:600}.st-soon .rb small{color:var(--amber);font-weight:600}
 .st-paid .rb b,.st-paid .ra b{color:var(--muted);font-weight:600}
@@ -223,7 +223,7 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#fca5a5}
 .tg{color:var(--accent);font-weight:800;font-size:.86em;letter-spacing:.2px}
 .fh{cursor:pointer}.mh .fh small{display:block}
 .lb{padding:8px 0;border-top:1px solid var(--border)}.gh+.lb{border-top:0}
-.lb .lt{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}.lb .lt span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .lt{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600}.lb .lt span:first-child{min-width:0;white-space:normal;overflow-wrap:anywhere}
 .lb small{display:block;font-size:12px;color:var(--muted);margin-top:3px}.lb small b{color:var(--text)}
 .dn{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.dn svg{width:170px;height:170px;flex:none}
 .dl{flex:1;min-width:180px}.dl div{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13.5px}.dl i{width:10px;height:10px;border-radius:3px;flex:none}.dl span{flex:1}.dl b{font-variant-numeric:tabular-nums}
@@ -721,7 +721,13 @@ function lastMode(it){return it.lastMode||it.mode||''}
 function pools(){const P={};S.cards.forEach(c=>{if(c.pool){(P[c.pool]=P[c.pool]||{name:c.pool,cards:[],limit:0}).cards.push(c);P[c.pool].limit=Math.max(P[c.pool].limit,+c.limit||0)}});return Object.values(P)}
 function usageUnits(ym){const U=pools().map(p=>({name:p.name+' pool ('+p.cards.length+' cards)',limit:p.limit,used:p.cards.reduce((a,c)=>a+cardUse(c,ym),0),cards:p.cards}));
   S.cards.filter(c=>!c.pool).forEach(c=>U.push({name:c.name+(c.last4?' ••'+c.last4:''),limit:+c.limit||0,used:cardUse(c,ym),cards:[c]}));return U}
-function cardUse(c,ym){const m='card:'+c.id;return spendsIn(ym).filter(s=>s.mode===m).reduce((a,s)=>a+ +s.amount,0)+entries(ym).filter(x=>x.paid&&x.r.mode===m).reduce((a,x)=>a+x.amt,0)}
+function lastStmt(c){const t=today(),y=+t.slice(0,4),m=+t.slice(5,7),d=Math.min(+c.stmt||1,28);let ym=ymOf(t);if(+t.slice(8)<d)ym=addM(ym,-1);return ym+'-'+String(d).padStart(2,'0')}
+function cardOwed(c){const m='card:'+c.id,it=S.items.find(i=>i.cardId===c.id),now=ymOf(today());let bill=0;
+  if(it)for(const ym of [addM(now,1),now,addM(now,-1)]){const r=S.rec[it.id+'|'+ym];if(r&&+r.amt>0){if(!r.paid)bill=+r.amt;break}}
+  const st=lastStmt(c),sp=S.spends.filter(s=>s.mode===m&&s.date>st).reduce((a,s)=>a+ +s.amount,0);
+  const pd=Object.entries(S.rec).filter(([k,r])=>r.paid&&r.mode===m&&r.date>st).reduce((a,[k,r])=>a+(+r.amt||0),0);
+  return bill+sp+pd}
+function cardUse(c,ym){if(ym>=ymOf(today()))return cardOwed(c);const m='card:'+c.id;return spendsIn(ym).filter(s=>s.mode===m).reduce((a,s)=>a+ +s.amount,0)+entries(ym).filter(x=>x.paid&&x.r.mode===m).reduce((a,x)=>a+x.amt,0)}
 function cardYear(c){const m='card:'+c.id,from=addM(ymOf(today()),-11);let a=S.spends.filter(s=>s.mode===m&&ymOf(s.date)>=from).reduce((t,s)=>t+ +s.amount,0);
   Object.entries(S.rec).forEach(([k,r])=>{if(r.paid&&r.mode===m&&k.split('|')[1]>=from)a+=+r.amt||0});return a}
 function waiverOf(c){if(+c.waiver)return +c.waiver;const m=/waived (?:on|after) ₹?([\d.,]+)\s*(L|K)?/i.exec(c.fee||'');if(!m)return 0;let n=parseFloat(m[1].replace(/,/g,''));if(m[2]&&m[2].toUpperCase()==='L')n*=1e5;if(m[2]&&m[2].toUpperCase()==='K')n*=1e3;return n}
