@@ -230,6 +230,7 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#fca5a5}
 .ins.hot{border-top:0;background:var(--amb);border-radius:10px;padding:10px;margin:6px 0}.ins.hot b{color:var(--amber)}
 .pendbar{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;background:var(--acsoft);border-radius:12px;padding:10px 12px;margin:8px 0 4px}
 .pendbar span{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--accent)}.pendbar b{font-size:20px;font-weight:800;margin-left:auto}.pendbar small{width:100%;font-size:12px;color:var(--muted)}
+.cyc{width:100%;border-collapse:collapse;font-size:13.5px;margin:4px 0 10px}.cyc th{text-align:left;font-size:12px;font-weight:700;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--border)}.cyc td{padding:9px 4px;border-bottom:1px solid var(--border);vertical-align:top}.cyc td:first-child{font-weight:600}.cyc td:nth-child(2),.cyc td:nth-child(3){white-space:nowrap}.cyc td.sn{color:var(--red);font-weight:800}.cyc .cl{font-size:12.5px;color:var(--muted);font-weight:700;margin:2px 0 0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;z-index:70;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
 .toast button{background:none;border:0;color:#7fb0ff;font-weight:800}
 
@@ -727,6 +728,22 @@ function cardOwed(c){const m='card:'+c.id,it=S.items.find(i=>i.cardId===c.id),no
   const st=lastStmt(c),sp=S.spends.filter(s=>s.mode===m&&s.date>st).reduce((a,s)=>a+ +s.amount,0);
   const pd=Object.entries(S.rec).filter(([k,r])=>r.paid&&r.mode===m&&r.date>st).reduce((a,[k,r])=>a+(+r.amt||0),0);
   return bill+sp+pd}
+function cycDate(ym,d){const n=new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();return ym+'-'+String(Math.min(+d||1,n)).padStart(2,'0')}
+function cardCycle(c){const t=today();let ym=ymOf(t);let st=cycDate(ym,c.stmt);if(st>t){ym=addM(ym,-1);st=cycDate(ym,c.stmt)}
+  const due=s=>{const sy=ymOf(s);let d=cycDate(sy,c.due);if(d<=s)d=cycDate(addM(sy,1),c.due);return d};
+  let du=due(st);if(du<t){st=cycDate(addM(ymOf(st),1),c.stmt);du=due(st)}return{st,du}}
+function freeDays(c){const t=today();let st=cycDate(ymOf(t),c.stmt);if(st<t)st=cycDate(addM(ymOf(t),1),c.stmt);let d=cycDate(ymOf(st),c.due);if(d<=st)d=cycDate(addM(ymOf(st),1),c.due);return daysTo(d)}
+function cycleTable(){const it=c=>S.items.find(i=>i.cardId===c.id);
+  const bank=c=>(c.name.split(' ')[0]||'').toUpperCase(),G={};
+  S.cards.forEach(c=>{const b=it(c),wait=b&&b.hold&&!b.amt,y=wait?null:cardCycle(c),k=wait?'w'+c.id:bank(c)+'|'+y.st+'|'+y.du;(G[k]=G[k]||{cs:[],wait,y}).cs.push(c)});
+  const R=Object.values(G).sort((a,b)=>a.wait-b.wait||(a.y&&b.y?a.y.du.localeCompare(b.y.du):0));
+  const avail=g=>{const pl=g.cs[0].pool,P=pl&&g.cs.every(c=>c.pool===pl)?pools().find(p=>p.name===pl):null;
+    const lim=P?+P.limit||0:g.cs.reduce((a,c)=>a+(+c.limit||0),0),used=(P?P.cards:g.cs).reduce((a,c)=>a+cardOwed(c),0),v=Math.max(lim-used,0);
+    return lim?`<span style="color:${v/lim<0.3?'var(--red)':'var(--green)'}">${shortRs(v)}</span><small style="display:block;font-weight:500;color:var(--muted);font-size:11.5px">of ${shortRs(lim)}</small>`:'—'};
+  const best=Math.max(0,...R.filter(g=>!g.wait).map(g=>freeDays(g.cs[0])));
+  const nm=g=>g.cs.length===1?esc(g.cs[0].name)+(g.cs[0].last4?' ••'+esc(g.cs[0].last4):''):`${esc(g.cs[0].name.split(' ')[0])} (${g.cs.length} cards)<small style="display:block;font-weight:500;color:var(--muted);font-size:12px">${g.cs.map(c=>esc(c.name.split(' ').slice(1).join(' '))+(c.last4?' ••'+esc(c.last4):'')).join(', ')}</small>`;
+  return `<div class="cl">🗓️ Card billing cycle</div><table class="cyc"><thead><tr><th>Card</th><th>Bill date</th><th>Pay by</th><th style="text-align:center">Free days</th><th style="text-align:right">Available</th></tr></thead><tbody>${R.map(g=>{const{wait,y}=g,fd=wait?0:freeDays(g.cs[0]);const dd=y?daysTo(y.du):99;
+    return `<tr><td>${nm(g)}</td><td>${wait?'After first bill':dLabel(y.st)}</td><td class="${!wait&&dd<=3?'sn':''}">${wait?'—':dLabel(y.du)+(dd===0?' (today)':dd===1?' (tomorrow)':'')}</td><td style="text-align:center;font-weight:800;${!wait&&fd===best?'color:var(--green)':''}">${wait?'—':fd}${!wait&&fd===best?'<small style="display:block;font-size:10.5px;font-weight:700">best</small>':''}</td><td style="text-align:right;font-weight:700">${avail(g)}</td></tr>`}).join('')}</tbody></table>`}
 function cardUse(c,ym){if(ym>=ymOf(today()))return cardOwed(c);const m='card:'+c.id;return spendsIn(ym).filter(s=>s.mode===m).reduce((a,s)=>a+ +s.amount,0)+entries(ym).filter(x=>x.paid&&x.r.mode===m).reduce((a,x)=>a+x.amt,0)}
 function cardYear(c){const m='card:'+c.id,from=addM(ymOf(today()),-11);let a=S.spends.filter(s=>s.mode===m&&ymOf(s.date)>=from).reduce((t,s)=>t+ +s.amount,0);
   Object.entries(S.rec).forEach(([k,r])=>{if(r.paid&&r.mode===m&&k.split('|')[1]>=from)a+=+r.amt||0});return a}
@@ -1170,7 +1187,7 @@ function vManage(){
    ${rv.map(x=>`<div class="row"><div class="rb"><b>${esc(x.name)}</b><small>${esc(x.info)}</small><small class="warn">${esc(x.what)}</small></div>
     <button class="tk ed" onclick="${x.kind==='card'?`cardForm('${x.id}')`:`editItem('${x.id}')`}" aria-label="Edit">✏️</button><button class="tk ed" onclick="${x.kind==='card'?`delCard('${x.id}')`:`delItem('${x.id}')`}" aria-label="Delete">🗑</button><button class="tk okb" onclick="okReview('${x.kind}','${x.id}')" aria-label="Looks right">✓</button></div>`).join('')}</section>`:''}
   ${q&&!cards.length?'':(()=>{const body=cards.map(c=>`<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Statement ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · '+rs(c.limit):''}</small></button><button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete">🗑</button></div>`).join('');
-     return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards',body,'#1a63e8',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
+     return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards',cycleTable()+'<div class="cl">Your cards</div>'+body,'#1a63e8',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
   ${secs}
   ${q?'':activityBox()}
   ${q?'':`<button class="btn wide" onclick="secForm()">＋ New box</button>
@@ -1256,7 +1273,14 @@ function tickItem(id,ym){
   if(it.hold)return openItem(id,ym);
   if(x.paid){S.rec[x.key]={...x.r,paid:false};save();render();return toast(isIn(it)?'Marked not received':'Marked not paid',()=>{S.rec[x.key]=prev;save();render()})}
   if(!x.amt)return openItem(id,ym);
-  const mode=x.r.mode||lastMode(it);
+  if(!isIn(it))return paidWith(id,ym);
+  donePaid(id,ym,x.r.mode||lastMode(it));
+}
+function paidWith(id,ym){const it=S.items.find(i=>i.id===id),x=entry(it,ym);
+  openModal(`<h2>Paid with</h2><div class="sub">${esc(it.name)} · ${rs(x.amt)} · due ${dLabel(x.date)}</div>
+  <div class="f"><label>Card / account</label><select id="pwm">${modeOpts(x.r.mode||lastMode(it))}</select></div>
+  <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="const m=val('pwm');closeModal();donePaid('${id}','${ym}',m)">Done</button></div>`)}
+function donePaid(id,ym,mode){const it=S.items.find(i=>i.id===id);if(!it)return;const x=entry(it,ym),prev=S.rec[x.key]?{...S.rec[x.key]}:null;
   S.rec[x.key]={amt:x.amt,paid:true,date:today(),mode};if(mode){it.lastMode=mode;it.mode=mode}save();render();
   toast(isIn(it)?'Received ✓':'Paid ✓',()=>{if(prev)S.rec[x.key]=prev;else delete S.rec[x.key];save();render()});
 }
