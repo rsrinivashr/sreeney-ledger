@@ -541,6 +541,27 @@ function runFixes12(){
   if(add.length)logA('App','New expense categories added',add.join(', '));
   S.fixes.f12=true;return true;
 }
+function runFixes13(){
+  S.fixes=S.fixes||{};if(S.fixes.f13)return false;
+  const E=[['1a05578caa605d9c','5008',99999,'2026-08-30'],['1a05578cad237a61','5008',189992,'2026-08-30'],['1a05578cb761d2af','5008',99999,'2026-08-30'],['1a05578cc8bb328c','5008',99000,'2026-08-30'],['1a05578d774525fd','5008',99999,'2026-08-30'],
+    ['1a07cba4ba146939','5008',20000,'2026-09-06'],['1a07cba4bdac8f96','5008',80710,'2026-09-06'],['1a07cbac274ed277','5008',62926,'2026-09-06'],
+    ['1a061c0ba29326a5','3000',49978,'2026-08-20'],['1a061c0bb2d7dad6','3000',49990,'2026-08-20'],['1a061c0bbd080d35','3000',1970,'2026-08-20'],['1a061c0bc962ff91','3000',145747.33,'2026-08-20']];
+  const ls=(S.secs.find(x=>x.type==='loan')||{k:'loans'}).k;let n=0;S.mailDone=S.mailDone||{};
+  E.forEach(([id,l4,amt,date])=>{const c=S.cards.find(x=>x.last4===l4);if(!c||S.items.some(i=>i.src===id))return;
+    S.items.push({id:uid(),sec:ls,name:`${c.name} ••${l4} · ${shortRs(amt)} · ${dLabel(date)}`,amt:0,day:c.due||1,freq:'monthly',start:ymOf(date),asOf:ymOf(date),left:0,roi:0,loanAmt:amt,
+      inBill:true,emiCard:c.id,mode:'card:'+c.id,src:id,note:'Card EMI (paid inside the card bill) — add EMI, months and interest from the bank\'s EMI schedule to confirm',ok:false});
+    S.mailDone[id]=true;n++});
+  if(n)logA('App','ICICI card EMIs added from your emails',n+' EMIs · amounts converted Aug–Sep 2026 · add EMI and months to make them exact');
+  S.fixes.f13=true;return true;
+}
+function runFixes14(){
+  S.fixes=S.fixes||{};if(S.fixes.f14)return false;if(!S.cats.includes('General'))S.cats.splice(Math.max(S.cats.indexOf('Other'),0),0,'General');
+  let n=0,c=0;(S.spends||[]).forEach(x=>{if(!x.auto)return;
+    if(isNameless(x.desc)){x.raw=x.raw||x.desc;x.desc='General';if(!x.cat||x.cat==='Other'||x.cat===guessCat(x.raw))x.cat='General';n++}
+    else if(x.cat==='Other'){const g=guessCat(x.desc);if(g!=='Other'){x.cat=g;c++}}});
+  if(n||c)logA('App','Email swipes tidied',(n?n+' without a shop name set to General':'')+(n&&c?' · ':'')+(c?c+' given a category from the shop name':''));
+  S.fixes.f14=true;return n+c>0||true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -549,7 +570,24 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+const CAT_RX=[['Groceries',/mart|kirana|supermarket|grocer|fresh|bigbasket|blinkit|zepto|instamart|dmart|avenue supermarts|ratnadeep|vegetable|milk|sampoorna|more retail|spencer|vijetha|heritage|dairy|provision|general store|fruits|organic|bbdaily|jiomart|swiggy instamart/i],
+ ['Fuel',/petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|filling|bunk|hp pay|nayara|essar|service station|\bcng\b/i],
+ ['Food',/swiggy|zomato|restaurant|cafe|caf\u00e9|hotel|biryani|bakery|bakers|food|kitchen|dhaba|pizza|chai|\btea\b|bbq|barbeque|grill|bistro|mess|tiffin|idli|dosa|mandi|paradise|bawarchi|kfc|mcdonald|domino|burger|subway|starbucks|chaayos|haldiram|sweets|juice|ice ?cream|creamstone|eatery|canteen|darshini|bar\b|pub\b|brew/i],
+ ['Medical',/pharma|medic|hospital|apollo|clinic|diagnos|lab|health|chemist|netmeds|1mg/i],
+ ['Shopping',/amazon|flipkart|myntra|ajio|meesho|nykaa|reliance|trends|lifestyle|decathlon|silks|sarees|textiles|garments|fashion|boutique|jewel|westside|pantaloons|max fashion|zudio|croma|vijay sales|ikea|footwear|bata|tanishq|chennai shopping|cmr|r s brothers/i],
+ ['Travel',/uber|ola|rapido|irctc|makemytrip|redbus|indigo|airline|metro|toll|fastag|parking/i],
+ ['Bills',/bbps|utility|electric|airtel|jio|recharge|broadband|water|gas|society|maintenance/i],
+ ['Entertainment',/netflix|hotstar|prime video|spotify|bookmyshow|pvr|inox|google play|youtube/i],
+ ['Home',/home needs|furniture|hardware|paint|electricals/i]];
+function guessCat(merchant){const m=String(merchant||'');const hit=CAT_RX.find(([,rx])=>rx.test(m));const c=hit?hit[0]:'Other';return S.cats.includes(c)?c:(S.cats.includes('Other')?'Other':S.cats[0])}
+function isNameless(d){d=String(d||'').trim();if(!d)return true;
+  if(/^[\d\W_]+$/.test(d))return true;
+  if(/^(paytm|paytmqr|gpay|googlepay|phonepe|bharatpe|upi|pay|q)[\w.\-@]*\d/i.test(d))return true;
+  if(!/\s/.test(d)&&/\d/.test(d)&&/[a-z]/i.test(d))return true;
+  if(!/\s/.test(d)&&/^[a-z]{1,4}$/.test(d))return true;
+  return false}
+const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -573,7 +611,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -876,17 +914,6 @@ function mailPending(){
 }
 const AUTO_KINDS=['paid','bill','loan','debit','income','util'];
 const autoKind=k=>k==='ins'||k==='cardemi'||AUTO_KINDS.includes(k)||(k==='spend'&&S.autoSpend!==false);
-const CAT_RX=[['Groceries',/mart|kirana|supermarket|grocer|fresh|bigbasket|blinkit|zepto|instamart|dmart|avenue supermarts|ratnadeep|vegetable|milk/i],
- ['Fuel',/petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|filling|bunk/i],
- ['Food',/swiggy|zomato|restaurant|cafe|hotel|biryani|bakery|food|kitchen|dhaba|pizza|chai|tea/i],
- ['Medical',/pharma|medic|hospital|apollo|clinic|diagnos|lab|health|chemist|netmeds|1mg/i],
- ['Shopping',/amazon|flipkart|myntra|ajio|meesho|nykaa|reliance|trends|lifestyle|decathlon/i],
- ['Travel',/uber|ola|rapido|irctc|makemytrip|redbus|indigo|airline|metro|toll|fastag|parking/i],
- ['Bills',/bbps|utility|electric|airtel|jio|recharge|broadband|water|gas|society|maintenance/i],
- ['Entertainment',/netflix|hotstar|prime video|spotify|bookmyshow|pvr|inox|google play|youtube/i],
- ['Home',/home needs|furniture|hardware|paint|electricals/i]];
-function guessCat(merchant){const m=String(merchant||'');const hit=CAT_RX.find(([,rx])=>rx.test(m));const c=hit?hit[0]:'Other';return S.cats.includes(c)?c:(S.cats.includes('Other')?'Other':S.cats[0])}
-const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
 function mailBox(){
   const L=mailPending().filter(m=>m.kind!=='ins'&&!(S.autoMail!==false&&autoKind(m.kind)&&mailText(m).ok));if(!L.length)return'';
   const sh=mailAll?L:L.slice(0,5),nOk=L.filter(m=>mailText(m).ok).length;
@@ -973,7 +1000,7 @@ function mailApply(id,quiet,auto){
   else if(m.kind==='debit'){const e=x.hit;recU(e.key);const r=S.rec[e.key]||{};S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:m.acct?`${m.bank} a/c ••${m.acct}`:`${m.bank} (email)`}}
   else{
     const c=x.f.c;
-    if(m.kind==='spend'){if(S.spends.some(s=>s.src===id))return false;const nm=cleanMerchant(m.merchant);S.spends.push({id:uid(),amount:m.amt,date:m.date,desc:nm,mode:'card:'+c.id,cat:guessCat(nm),kind:'Ad hoc',at:Date.now(),src:id,auto:true});U.push({t:'spend',src:id})}
+    if(m.kind==='spend'){if(S.spends.some(s=>s.src===id))return false;const nm=cleanMerchant(m.merchant),nl=isNameless(nm)&&S.cats.includes('General');S.spends.push({id:uid(),amount:m.amt,date:m.date,desc:nl?'General':nm,raw:nm,mode:'card:'+c.id,cat:nl?'General':guessCat(nm),kind:'Ad hoc',at:Date.now(),src:id,auto:true});U.push({t:'spend',src:id})}
     else{
       cU(c);if(x.f.setL4&&!c.last4)c.last4=x.f.setL4;
       const it=S.items.find(i=>i.cardId===c.id);
@@ -1050,8 +1077,8 @@ function vPay(){
     const sps=S.spends.filter(s=>[s.desc,s.cat,modeName(s.mode)].join(' ').toLowerCase().includes(q)).slice(0,20);
     body=`<section class="list">${its.map(i=>occurs(i,YM)?row(entry(i,YM)):plainRow(i)).join('')}${sps.map(spendRow).join('')}${!its.length&&!sps.length?'<div class="empty">No matches.</div>':''}</section>`;
   }else if(chip==='exp'){
-    const sp=spendsIn(YM),tot=sp.reduce((a,s)=>a+ +s.amount,0);
-    body=`<section class="list"><div class="gh">${sp.length} expenses · ${rs(tot)}<button class="btn lnk" onclick="quickExpense()">+ Add</button></div>${sp.map(spendRow).join('')||'<div class="empty">Log card swipes, UPI and cash here. Tap + to add.</div>'}</section>`;
+    const sp=spendsIn(YM),tot=sp.reduce((a,s)=>a+ +s.amount,0),nm=sp.filter(x=>x.desc==='General'&&+x.amount>=500);
+    body=`${nm.length?`<section class="list"><div class="gh a">✏️ Name these · ${nm.length}<span>General swipes ₹500+</span></div>${nm.map(spendRow).join('')}</section>`:''}<section class="list"><div class="gh">${sp.length} expenses · ${rs(tot)}<button class="btn lnk" onclick="quickExpense()">+ Add</button></div>${sp.map(spendRow).join('')||'<div class="empty">Log card swipes, UPI and cash here. Tap + to add.</div>'}</section>`;
   }else{
     const inc=chip==='in',es=entries(YM).filter(x=>matchChip(x.it)&&(!x.it.hold||S.showHold));
     const early=!inc&&YM===cur?earlierOverdue().filter(x=>matchChip(x.it)):[];
@@ -1088,7 +1115,7 @@ function chart(){
    <div class="legend"><span><i style="background:var(--green)"></i>Came in</span><span><i style="background:var(--red)"></i>Paid out</span>${months.length<3?'<span>Builds up month by month</span>':''}</div>`;
 }
 function toPay(i,ym){if(+i.principalLeft)return +i.principalLeft;const l=loanLeft(i,ym);if(l!=null&&+i.amt)return l*(+i.amt);return i.inBill?(+i.loanAmt||0):0}
-function shortRs(v){v=Math.round(v||0);return v>=1e7?'₹'+(v/1e7).toFixed(2)+'Cr':v>=1e5?'₹'+(v/1e5).toFixed(1)+'L':v>=1e3?'₹'+(v/1e3).toFixed(0)+'K':'₹'+v}
+function shortRs(v){v=Math.round(v||0);return v>=99995e2?'₹'+(v/1e7).toFixed(2)+'Cr':v>=99500?'₹'+(v/1e5).toFixed(1)+'L':v>=1e3?'₹'+(v/1e3).toFixed(0)+'K':'₹'+v}
 function activeLoans(){return S.items.filter(i=>tOf(i)==='loan'&&!i.hold&&(i.inBill||occurs(i,YM)))}
 function prepayOrder(){
   const ls=activeLoans();
@@ -1447,13 +1474,13 @@ function spendForm(id){
   const s=S.spends.find(x=>x.id===id)||{date:today(),kind:'Ad hoc',cat:'Shopping'};
   openModal(`<h2>${id?'Edit expense':'Add expense'}</h2><div class="sub">Card swipe, UPI or cash.</div>
    <div class="f2"><div class="f"><label>Amount (₹)</label><input type="number" inputmode="decimal" id="sa" value="${s.amount??''}"></div><div class="f"><label>Date</label><input type="date" id="sd" value="${s.date}"></div></div>
-   <div class="f"><label>What for</label><input id="sw" value="${esc(s.desc)}" placeholder="e.g. Petrol, D-Mart, Doctor"></div>
+   <div class="f"><label>What for</label><input id="sw" value="${esc(s.desc)}" placeholder="e.g. Petrol, D-Mart, Doctor">${s.raw&&s.raw!==s.desc?`<small style="color:var(--muted);font-size:12px">Bank text: ${esc(s.raw)}</small>`:''}</div>
    <div class="f"><label>Paid via</label><select id="sm">${modeOpts(s.mode||'')}</select></div>
    <div class="f2"><div class="f"><label>Category</label><select id="sc">${sel(S.cats,s.cat)}</select></div><div class="f"><label>Type</label><select id="sk">${sel(['Regular','Ad hoc'],s.kind)}</select></div></div>
    <div class="acts">${id?`<button class="btn dng" onclick="delSpend('${id}')">Delete</button><span style="flex:1"></span>`:''}<button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="saveSpend('${id||''}')">Save</button></div>`);
 }
 function saveSpend(id){const a=+val('sa');if(!a)return toast('Enter the amount');if(!val('sm'))return toast('Pick how you paid');
-  const s={id:id||uid(),amount:a,date:val('sd')||today(),desc:val('sw'),mode:val('sm'),cat:val('sc'),kind:val('sk'),at:Date.now()};
+  const old=S.spends.find(x=>x.id===id)||{};const s={...old,id:id||uid(),amount:a,date:val('sd')||today(),desc:val('sw'),mode:val('sm'),cat:val('sc'),kind:val('sk'),at:old.at||Date.now()};
   const i=S.spends.findIndex(x=>x.id===id);i>=0?S.spends[i]=s:S.spends.push(s);save();closeModal();render();toast('Expense saved')}
 function delSpend(id){S.spends=S.spends.filter(x=>x.id!==id);save();closeModal();render();toast('Deleted')}
 function remindForm(){openModal(`<h2>Payment alerts</h2><div class="sub">Applies to every payment — cards, loans, insurance, bills, everything.</div>
