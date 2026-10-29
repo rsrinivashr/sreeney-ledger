@@ -312,7 +312,7 @@ const TYPES=[['out','Payments (bills, fees, rent…)'],['in','Income'],['loan','
 function secOf(k){return S.secs.find(x=>x.k===k)||{k,t:k,ic:'•',c:'#64748b',type:'out'}}
 const tOf=it=>secOf(it.sec).type;
 const isIn=it=>tOf(it)==='in';
-const SPEND_CATS=['Groceries','Fuel','Food','Shopping','Medical','Travel','Home','Kids','Gifts','Other'];
+const SPEND_CATS=['Groceries','Fuel','Food','Shopping','Medical','Travel','Home','Kids','Gifts','SSHN','Power Bill','Edu Fee','Insurance','General','Payment','Paid to CC','Other'];
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ---------- helpers ---------- */
@@ -532,6 +532,15 @@ function runFixes11(){
   if(n)logA('App','HDFC loans updated from your sheet',n+' loans · months left counted from Nov · new rates');
   S.fixes.f11=true;return true;
 }
+function runFixes12(){
+  S.fixes=S.fixes||{};if(S.fixes.f12)return false;
+  S.cats=S.cats||[];const add=['SSHN','Power Bill','Edu Fee','Insurance','General','Payment','Paid to CC'].filter(c=>!S.cats.includes(c));
+  if(add.length){const oi=S.cats.indexOf('Other');oi>=0?S.cats.splice(oi,0,...add):S.cats.push(...add)}
+  const tn=S.cards.find(c=>c.last4==='3777'||/tata\s*neu/i.test(c.name));
+  if(tn&&tn.pool!=='HDFC'){tn.pool='HDFC';logA('App','Tata Neu card added to the HDFC shared limit pool')}
+  if(add.length)logA('App','New expense categories added',add.join(', '));
+  S.fixes.f12=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -540,7 +549,7 @@ function runFixes2(){
   if(tn){tn.note='Active. Pay-by day is set automatically from its first bill email.';const b=S.items.find(i=>i.cardId===tn.id);if(b){b.note='Reminders start with the first bill email';b.ok=true}}
   S.fixes.f2=true;return true;
 }
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -564,7 +573,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -723,11 +732,17 @@ function pools(){const P={};S.cards.forEach(c=>{if(c.pool){(P[c.pool]=P[c.pool]|
 function usageUnits(ym){const U=pools().map(p=>({name:p.name+' pool ('+p.cards.length+' cards)',limit:p.limit,used:p.cards.reduce((a,c)=>a+cardUse(c,ym),0),cards:p.cards}));
   S.cards.filter(c=>!c.pool).forEach(c=>U.push({name:c.name+(c.last4?' ••'+c.last4:''),limit:+c.limit||0,used:cardUse(c,ym),cards:[c]}));return U}
 function lastStmt(c){const t=today(),y=+t.slice(0,4),m=+t.slice(5,7),d=Math.min(+c.stmt||1,28);let ym=ymOf(t);if(+t.slice(8)<d)ym=addM(ym,-1);return ym+'-'+String(d).padStart(2,'0')}
+function emiOut(it){const ym=ymOf(today());if(it.hold)return 0;if(+it.principalLeft)return +it.principalLeft;
+  if(+it.amt&&+it.left){const n=loanLeft(it,ym);if(n==null||n<=0)return 0;const r=(+it.roi||0)/1200;return Math.round(r?it.amt*(1-Math.pow(1+r,-n))/r:it.amt*n)}
+  return +it.loanAmt||0}
+function emiItems(c){return S.items.filter(i=>i.inBill&&i.emiCard===c.id&&!i.hold)}
+function emiBlocked(c){return emiItems(c).reduce((a,i)=>a+emiOut(i),0)}
+function emiApprox(c){return emiItems(c).some(i=>!+i.principalLeft&&!(+i.amt&&+i.left))}
 function cardOwed(c){const m='card:'+c.id,it=S.items.find(i=>i.cardId===c.id),now=ymOf(today());let bill=0;
   if(it)for(const ym of [addM(now,1),now,addM(now,-1)]){const r=S.rec[it.id+'|'+ym];if(r&&+r.amt>0){if(!r.paid)bill=+r.amt;break}}
   const st=lastStmt(c),sp=S.spends.filter(s=>s.mode===m&&s.date>st).reduce((a,s)=>a+ +s.amount,0);
   const pd=Object.entries(S.rec).filter(([k,r])=>r.paid&&r.mode===m&&r.date>st).reduce((a,[k,r])=>a+(+r.amt||0),0);
-  return bill+sp+pd}
+  return bill+sp+pd+emiBlocked(c)}
 function cycDate(ym,d){const n=new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate();return ym+'-'+String(Math.min(+d||1,n)).padStart(2,'0')}
 function cardCycle(c){const t=today();let ym=ymOf(t);let st=cycDate(ym,c.stmt);if(st>t){ym=addM(ym,-1);st=cycDate(ym,c.stmt)}
   const due=s=>{const sy=ymOf(s);let d=cycDate(sy,c.due);if(d<=s)d=cycDate(addM(sy,1),c.due);return d};
@@ -739,7 +754,7 @@ function cycleTable(){const it=c=>S.items.find(i=>i.cardId===c.id);
   const R=Object.values(G).sort((a,b)=>a.wait-b.wait||(a.y&&b.y?a.y.du.localeCompare(b.y.du):0));
   const avail=g=>{const pl=g.cs[0].pool,P=pl&&g.cs.every(c=>c.pool===pl)?pools().find(p=>p.name===pl):null;
     const lim=P?+P.limit||0:g.cs.reduce((a,c)=>a+(+c.limit||0),0),used=(P?P.cards:g.cs).reduce((a,c)=>a+cardOwed(c),0),v=Math.max(lim-used,0);
-    return lim?`<span style="color:${v/lim<0.3?'var(--red)':'var(--green)'}">${shortRs(v)}</span><small style="display:block;font-weight:500;color:var(--muted);font-size:11.5px">of ${shortRs(lim)}</small>`:'—'};
+    return lim?`<span style="color:${v/lim<0.3?'var(--red)':'var(--green)'}">${shortRs(v)}</span><small style="display:block;font-weight:500;color:var(--muted);font-size:11.5px">of ${shortRs(lim)}</small>${(()=>{const e=(P?P.cards:g.cs).reduce((a,c)=>a+emiBlocked(c),0);return e?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">EMI ${shortRs(e)}</small>`:''})()}`:'—'};
   const best=Math.max(0,...R.filter(g=>!g.wait).map(g=>freeDays(g.cs[0])));
   const nm=g=>g.cs.length===1?esc(g.cs[0].name)+(g.cs[0].last4?' ••'+esc(g.cs[0].last4):''):`${esc(g.cs[0].name.split(' ')[0])} (${g.cs.length} cards)<small style="display:block;font-weight:500;color:var(--muted);font-size:12px">${g.cs.map(c=>esc(c.name.split(' ').slice(1).join(' '))+(c.last4?' ••'+esc(c.last4):'')).join(', ')}</small>`;
   return `<div class="cl">🗓️ Card billing cycle</div><table class="cyc"><thead><tr><th>Card</th><th>Bill date</th><th>Pay by</th><th style="text-align:center">Free days</th><th style="text-align:right">Available</th></tr></thead><tbody>${R.map(g=>{const{wait,y}=g,fd=wait?0:freeDays(g.cs[0]);const dd=y?daysTo(y.du):99;
@@ -748,7 +763,7 @@ function cardUse(c,ym){if(ym>=ymOf(today()))return cardOwed(c);const m='card:'+c
 function cardYear(c){const m='card:'+c.id,from=addM(ymOf(today()),-11);let a=S.spends.filter(s=>s.mode===m&&ymOf(s.date)>=from).reduce((t,s)=>t+ +s.amount,0);
   Object.entries(S.rec).forEach(([k,r])=>{if(r.paid&&r.mode===m&&k.split('|')[1]>=from)a+=+r.amt||0});return a}
 function waiverOf(c){if(+c.waiver)return +c.waiver;const m=/waived (?:on|after) ₹?([\d.,]+)\s*(L|K)?/i.exec(c.fee||'');if(!m)return 0;let n=parseFloat(m[1].replace(/,/g,''));if(m[2]&&m[2].toUpperCase()==='L')n*=1e5;if(m[2]&&m[2].toUpperCase()==='K')n*=1e3;return n}
-const CAT_IC={Groceries:'🛒',Fuel:'⛽',Food:'🍽️',Shopping:'🛍️',Medical:'💊',Travel:'🚕',Home:'🏠',Kids:'🎒',Gifts:'🎁',Other:'📦',Bills:'🧾',Entertainment:'🎬',Education:'📚'};
+const CAT_IC={Groceries:'🛒',Fuel:'⛽',Food:'🍽️',Shopping:'🛍️',Medical:'💊',Travel:'🚕',Home:'🏠',Kids:'🎒',Gifts:'🎁',Other:'📦',Bills:'🧾',Entertainment:'🎬',Education:'📚',SSHN:'🏪','Power Bill':'⚡','Edu Fee':'🎓',Insurance:'🛡️',General:'🗂️',Payment:'💸','Paid to CC':'💳'};
 const catIc=c=>CAT_IC[c]||'🏷️';
 const NEEDS=/confirm|add tenure|add amount|sheet showed|not in sheet|also says/i;
 function reviewList(){
@@ -1029,7 +1044,7 @@ function vPay(){
     <div><span>Still to pay</span><b class="due">${rs(t.due)}</b></div></section>`;
   const chips=`<div class="chips">${CHIPS.map(([k,l])=>`<button class="${chip===k?'on':''}" onclick="chip='${k}';showPaid=false;render()">${l}</button>`).join('')}</div>
    <div class="search"><span aria-hidden="true">🔍</span><input id="q" placeholder="Search bills, loans, cards" value="${esc(Q)}" oninput="Q=this.value;render()" aria-label="Search">${Q?`<button onclick="Q='';render()" aria-label="Clear">✕</button>`:''}</div>`;
-  let body='';
+  let body='',mbUsed=false;const mb=mailBox();
   if(Q.trim()){
     const q=Q.trim().toLowerCase(),its=S.items.filter(i=>[i.name,i.note,i.ref,i.place,secOf(i.sec).t].join(' ').toLowerCase().includes(q));
     const sps=S.spends.filter(s=>[s.desc,s.cat,modeName(s.mode)].join(' ').toLowerCase().includes(q)).slice(0,20);
@@ -1047,6 +1062,7 @@ function vPay(){
     const pend=[...early,...es.filter(x=>!x.paid&&x.st!=='hold')],pendAmt=pend.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0);
     body=`<section class="list">
       <div class="pendbar"><span>${inc?'Still to come this month':'Pending this month'}</span><b>${rs(pendAmt)}</b><small>${pend.length} item${pend.length===1?'':'s'} · excludes ${inc?'received':'paid'}</small></div>
+      ${(mbUsed=true,mb)}
       ${grp('From earlier months','r',early)}${grp(inc?'Late':'Overdue','r',over)}${grp(inc?'Expected this week':'This week','a',wk)}${grp(inc?'Expected next week':'Next week','',nw)}
       ${later.length?`<button class="gh fold" onclick="togF('later',false)">Later · ${later.length}<span>${rs(later.reduce((s,x)=>s+(x.amt||lastAmt(x.it,x.ym)),0))} ${isOpen('later',false)?'▴':'▾'}</span></button>${isOpen('later',false)?later.map(row).join(''):''}`:''}
       ${paid.length?`<button class="gh g fold" onclick="showPaid=!showPaid;render()">${inc?'Received':'Paid'} · ${paid.length}<span>${rs(paid.reduce((s,x)=>s+x.amt,0))} ${showPaid?'▴':'▾'}</span></button>${showPaid?paid.map(row).join(''):''}`:''}
@@ -1054,7 +1070,7 @@ function vPay(){
       ${!early.length&&!es.length&&!nxt.length?`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`:''}
     </section>`;
   }
-  return top+autoLogBox()+mailBox()+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body;
+  return top+autoLogBox()+(mbUsed?'':mb)+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body;
 }
 
 /* ---------- screen 2: Summary ---------- */
@@ -1095,7 +1111,7 @@ function loanInsights(){
   const bars=list.map(i=>{const l=loanLeft(i,YM),w=(+i.amt||0)/mx*100;return `<div class="lb"><div class="lt"><span><span class="tg">${tagOf(i)}-</span>${esc(i.name)}</span><span>${+i.amt?rs(i.amt)+'/mo':'EMI not set'}</span></div>
     <div class="bar"><i style="width:${w}%;background:${i.inBill?'#eb6834':'var(--accent)'}"></i></div><small>${l!=null?l+'m left · ':''}<b>${shortRs(toPay(i,YM))} to pay</b>${+i.principalLeft?' (principal)':''}${loanEnd(i)?' · ends '+mName(loanEnd(i)):''}</small></div>`}).join('');
   const body=`<div class="kv"><div><span>EMI / month</span><b>${rs(emi)}</b></div><div><span>Still to pay (all)</span><b>${shortRs(total)}</b></div></div>
-   ${last?`<div class="ins"><b>🏁 Debt-free in ${mLeft} months</b><small>Last EMI ${mName(last[1])} · ${esc(last[0].name)}</small></div>`:''}
+   ${last?`<div class="ins"><b>🏁 Debt-free in ${mLeft} months (${(mLeft/12).toFixed(1)} years)</b><small>Last EMI ${mName(last[1])} · ${esc(last[0].name)}</small></div>`:''}
    ${prepay}
    <div class="gh">EMI per loan${cemi.length?' · orange = card EMI (inside card bill)':''}</div>${bars}
    ${sorted.length>10?`<button class="more" onclick="togF('loanAll',false)">${showAll?'Show top 10':'Show all '+sorted.length+' loans'}</button>`:''}
@@ -1119,7 +1135,7 @@ function cardInsights(){
   const U=usageUnits(YM).filter(u=>u.limit||u.used);
   const rows=U.map(u=>{const pc=u.limit?u.used/u.limit:0;return `<div class="crow"><div class="ct"><b>${esc(u.name)}</b><span>${u.limit?Math.round(pc*100)+'%':''}</span></div>
     ${u.limit?`<div class="bar"><i style="width:${Math.min(pc*100,100)}%;background:${pc>.3?'var(--red)':'var(--accent)'}"></i></div>`:''}
-    <small>${rs(u.used)}${u.limit?' of '+rs(u.limit)+' used':' used · no limit set'}${pc>.3?' · <em class="bd">above 30%</em>':''}${u.cards.length>1?' · '+u.cards.map(c=>esc(c.name.replace(/^(HDFC|ICICI)\s*/i,''))).join(', '):''}</small></div>`}).join('');
+    <small>${rs(u.used)}${u.limit?' of '+rs(u.limit)+' used':' used · no limit set'}${pc>.3?' · <em class="bd">above 30%</em>':''}${(()=>{const e=u.cards.reduce((a,c)=>a+emiBlocked(c),0);return e?' · incl. EMI blocked '+shortRs(e)+(u.cards.some(emiApprox)?' (approx)':''):''})()}${u.cards.length>1?' · '+u.cards.map(c=>esc(c.name.replace(/^(HDFC|ICICI)\s*/i,''))).join(', '):''}</small></div>`}).join('');
   const fees=S.cards.filter(c=>waiverOf(c)).map(c=>{const w=waiverOf(c),yr=cardYear(c);return `<div class="crow"><div class="ct"><b>${esc(c.name)}</b><span>${yr>=w?'<em class="gd">waived ✓</em>':shortRs(w-yr)+' to go'}</span></div><div class="bar thin"><i style="width:${Math.min(yr/w*100,100)}%;background:var(--green)"></i></div><small>Fee waiver: ${rs(yr)} of ${rs(w)} in 12 months</small></div>`}).join('');
   const hot=U.filter(u=>u.limit&&u.used/u.limit>.3).length;
   return fold('sCards','💳 Card usage vs limit',hot?hot+' above 30%':'All under 30%',rows+(fees?`<div class="gh">Annual fee waiver</div>${fees}`:''),'#1a63e8',false);
@@ -1177,7 +1193,7 @@ function vManage(){
     if(q&&!its.length)return'';
     return `<section class="card2" style="--c:${s.c}"><div class="mh"><button class="rb" onclick="openSec['${s.k}']=!openSec['${s.k}'];render()"><b>${esc(s.ic)} ${esc(s.t)}</b><small>${its.length} items ${open?'▴':'▾'}</small></button>
      <button class="tk ed" onclick="${s.type==='card'?'cardForm()':`editItem(null,'${s.k}')`}" aria-label="Add to ${esc(s.t)}">＋</button><button class="tk ed" onclick="secForm('${s.k}')" aria-label="Edit box">⋯</button></div>
-     ${open?its.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc([+i.amt?rs(i.amt):'Varies',i.freq==='once'?dLabel(i.date||today()):i.freq==='months'?(i.months||[]).map(m=>MN[m-1]).join(', '):ord(i.day)+' monthly',i.hold?"Don't pay":''].filter(Boolean).join(' · '))}</small></button>
+     ${open?its.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc([i.sec==='ins'&&i.policyNo?'Policy '+i.policyNo:'',i.sec==='ins'&&+i.sumAssured?'Cover '+shortRs(i.sumAssured):'',+i.amt?rs(i.amt):'Varies',i.freq==='once'?dLabel(i.date||today()):i.freq==='months'?(i.months||[]).map(m=>MN[m-1]).join(', '):ord(i.day)+' monthly',i.hold?"Don't pay":''].filter(Boolean).join(' · '))}</small></button>
        <button class="tk ed" onclick="editItem('${i.id}')" aria-label="Edit ${esc(i.name)}">✏️</button><button class="tk ed" onclick="delItem('${i.id}')" aria-label="Delete ${esc(i.name)}">🗑</button></div>`).join('')||'<div class="empty">No items yet.</div>':''}
     </section>`});const secsIn=secsArr.filter((h,i)=>S.secs[i].type==='in').join(''),secs=secsArr.filter((h,i)=>S.secs[i].type!=='in'&&S.secs[i].type!=='card').join('');
   const cardSecs=S.secs.filter(x=>x.type==='card').map(x=>x.k),extraBills=S.items.filter(i=>cardSecs.includes(i.sec)&&!(i.cardId&&card(i.cardId))&&match(i));
@@ -1189,7 +1205,7 @@ function vManage(){
     <button class="tk ed" onclick="${x.kind==='card'?`cardForm('${x.id}')`:`editItem('${x.id}')`}" aria-label="Edit">✏️</button><button class="tk ed" onclick="${x.kind==='card'?`delCard('${x.id}')`:`delItem('${x.id}')`}" aria-label="Delete">🗑</button><button class="tk okb" onclick="okReview('${x.kind}','${x.id}')" aria-label="Looks right">✓</button></div>`).join('')}</section>`:''}
   ${secsIn}
   ${q&&!cards.length?'':(()=>{const body=cards.map(c=>{const b=S.items.find(i=>i.cardId===c.id),bl=b?[b.hold?"Don't pay":(+b.amt?'Bill '+rs(b.amt):'Bill varies'),b.mode?'usually via '+modeName(b.mode):''].filter(Boolean).join(' · '):'No bill reminder';
-      return `<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Bill ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · limit '+shortRs(c.limit):''}</small><small>${esc(bl)}</small></button>${b?`<button class="tk ed" onclick="editItem('${b.id}')" aria-label="Bill settings for ${esc(c.name)}">🧾</button>`:''}<button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit card">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete card">🗑</button></div>`}).join('')
+      return `<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Bill ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · limit '+shortRs(c.limit):''}</small><small>${esc(bl)}</small>${emiBlocked(c)?`<small>EMI blocked ${shortRs(emiBlocked(c))}${emiApprox(c)?' (approx)':''} · ${emiItems(c).length} EMI${emiItems(c).length>1?'s':''}</small>`:''}</button>${b?`<button class="tk ed" onclick="editItem('${b.id}')" aria-label="Bill settings for ${esc(c.name)}">🧾</button>`:''}<button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit card">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete card">🗑</button></div>`}).join('')
       +(extraBills.length?'<div class="cl">Other card payments</div>'+extraBills.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc((+i.amt?rs(i.amt):'Varies')+' · '+ord(i.day)+' monthly')}</small></button><button class="tk ed" onclick="editItem('${i.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delItem('${i.id}')" aria-label="Delete">🗑</button></div>`).join(''):'');
      return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards · bills &amp; billing cycle',cycleTable()+'<div class="cl">Your cards</div>'+body,'#1a63e8',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
   ${secs}
@@ -1332,6 +1348,8 @@ function editItem(id,secK){
      <div class="f2"><div class="f"><label>Loan amount (₹)</label><input type="number" id="et" value="${it.loanAmt||''}"></div><div class="f"><label>Principal left (₹)</label><input type="number" step="0.01" id="epl" value="${it.principalLeft||''}"></div></div>
      <div class="f2"><div class="f"><label>Amount paid so far (₹)</label><input type="number" step="0.01" id="epa" value="${it.paidAmt||''}"></div><div class="f"><label>Principal paid (₹)</label><input type="number" step="0.01" id="epp" value="${it.principalPaid||''}"></div></div>
      <div class="f2"><div class="f"><label>Sanction date</label><input type="date" id="esd" value="${it.sanction||''}"></div><div class="f"><label>Closing date</label><input type="date" id="ecd" value="${it.closing||''}"></div></div>`:''}
+   ${T==='loan'?`<div class="f"><label>Card EMI on</label><select id="ece"><option value="">Not a card EMI (separate loan)</option>${S.cards.map(c=>`<option value="${c.id}" ${it.emiCard===c.id?'selected':''}>${esc(modeName('card:'+c.id))}</option>`).join('')}</select><small style="color:var(--muted);font-size:12px">Card EMIs are paid inside that card's bill — not listed again in To pay, and they block the card's limit.</small></div>`:''}
+   ${it.sec==='ins'?`<div class="f2"><div class="f"><label>Policy number</label><input id="epn" value="${esc(it.policyNo)}"></div><div class="f"><label>Sum assured / cover (₹)</label><input type="number" id="esa" value="${it.sumAssured||''}"></div></div>`:''}
    ${T==='out'?`<div class="f2"><div class="f"><label>Ref / service no.</label><input id="ex" value="${esc(it.ref)}"></div><div class="f"><label>Place / for</label><input id="ep" value="${esc(it.place)}"></div></div>`:''}
    <div class="f"><label>${inc?'Comes into':T==='loan'?'EMI debited from (bank)':'Usually paid via'}</label><select id="em">${modeOpts(it.mode||'')}</select></div>
    <div class="f"><label>Note</label><input id="eno" value="${esc(it.note)}"></div>
@@ -1359,7 +1377,9 @@ function saveItem(id){
   if(it.freq==='once'){if(!it.date)return toast('Pick the date');it.start=ymOf(it.date);it.day=+it.date.slice(8)}
   if(T==='loan'){it.left=+val('el')||0;it.asOf=it.start;it.roi=+val('er')||0;it.loanAmt=+val('et')||0;it.pending=it.left*it.amt;
     const pl=val('epl');if(pl!==''&&+pl!==+old.principalLeft){it.principalLeft=+pl;it.plAsOf=today()}else if(pl===''){delete it.principalLeft}
-    it.paidAmt=+val('epa')||0;it.principalPaid=+val('epp')||0;it.sanction=val('esd');it.closing=val('ecd')}
+    it.paidAmt=+val('epa')||0;it.principalPaid=+val('epp')||0;it.sanction=val('esd');it.closing=val('ecd');
+    const ce=val('ece');if(ce){it.inBill=true;it.emiCard=ce;it.mode='card:'+ce}else if(document.getElementById('ece')){delete it.inBill;delete it.emiCard}}
+  if(sk==='ins'){it.policyNo=val('epn');it.sumAssured=+val('esa')||0}
   if(T==='out'){it.ref=val('ex');it.place=val('ep')}
   if(T==='card')it.cardId=val('ec');
   if(id)it.ok=true;
