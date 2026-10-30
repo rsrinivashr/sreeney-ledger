@@ -547,7 +547,7 @@ function runFixes13(){
     ['1a07cba4ba146939','5008',20000,'2026-09-06'],['1a07cba4bdac8f96','5008',80710,'2026-09-06'],['1a07cbac274ed277','5008',62926,'2026-09-06'],
     ['1a061c0ba29326a5','3000',49978,'2026-08-20'],['1a061c0bb2d7dad6','3000',49990,'2026-08-20'],['1a061c0bbd080d35','3000',1970,'2026-08-20'],['1a061c0bc962ff91','3000',145747.33,'2026-08-20']];
   const ls=(S.secs.find(x=>x.type==='loan')||{k:'loans'}).k;let n=0;S.mailDone=S.mailDone||{};
-  E.forEach(([id,l4,amt,date])=>{const c=S.cards.find(x=>x.last4===l4);if(!c||S.items.some(i=>i.src===id))return;
+  E.forEach(([id,l4,amt,date])=>{const c=S.cards.find(x=>x.last4===l4);if(!c||S.items.some(i=>i.src===id||(i.srcs||[]).includes(id)))return;
     S.items.push({id:uid(),sec:ls,name:`${c.name} ••${l4} · ${shortRs(amt)} · ${dLabel(date)}`,amt:0,day:c.due||1,freq:'monthly',start:ymOf(date),asOf:ymOf(date),left:0,roi:0,loanAmt:amt,
       inBill:true,emiCard:c.id,mode:'card:'+c.id,src:id,note:'Card EMI (paid inside the card bill) — add EMI, months and interest from the bank\'s EMI schedule to confirm',ok:false});
     S.mailDone[id]=true;n++});
@@ -561,6 +561,49 @@ function runFixes14(){
     else if(x.cat==='Other'){const g=guessCat(x.desc);if(g!=='Other'){x.cat=g;c++}}});
   if(n||c)logA('App','Email swipes tidied',(n?n+' without a shop name set to General':'')+(n&&c?' · ':'')+(c?c+' given a category from the shop name':''));
   S.fixes.f14=true;return n+c>0||true;
+}
+function runFixes15(){
+  S.fixes=S.fixes||{};if(S.fixes.f15)return false;
+  const L4=l=>S.cards.find(c=>c.last4===l),ls=(S.secs.find(x=>x.type==='loan')||{k:'loans'}).k,bill=c=>c&&S.items.find(i=>i.cardId===c.id);
+  const base=(c,o)=>Object.assign({id:uid(),sec:ls,freq:'monthly',day:(c&&c.due)||1,start:o.asOf||'2026-11',asOf:'2026-11',inBill:true,emiCard:c.id,mode:'card:'+c.id,ok:true,note:''},o);
+  const done=[];
+  // ICICI Rupay ••5008
+  const c58=L4('5008');if(c58){const old=S.items.filter(i=>i.inBill&&i.emiCard===c58.id&&!/loan on card/i.test(i.name));const srcs=old.map(i=>i.src).filter(Boolean);
+    S.items=S.items.filter(i=>!old.includes(i));
+    S.items.push(base(c58,{name:'ICICI Rupay ••5008 · EMIs on Call (8)',amt:37574.14,left:22,roi:18,loanAmt:752625,start:'2026-09',closing:'2028-08-06',blockMode:'emiLeft',srcs,note:'8 EMIs on Call (30 Aug ×5, 6 Sep ×3) merged · from Oct statement'}));
+    const pl=S.items.find(i=>tOf(i)==='loan'&&/icici/i.test(i.name)&&/10\s*l|personal/i.test(i.name)&&!/on call/i.test(i.name));
+    const plv={name:'ICICI Rupay ••5008 · Loan on Card 10L',amt:25845.52,left:44,asOf:'2026-11',roi:11,loanAmt:1000000,inBill:true,inBillFrom:'2026-11',emiCard:c58.id,mode:'card:'+c58.id,noBlock:true,sanction:'2026-06-15',closing:'2030-05-15',ok:true,note:'Personal Loan on Credit Card — billed inside the ••5008 card bill; does not block the card limit'};
+    if(pl){Object.assign(pl,plv);delete pl.principalLeft;pl.pending=plv.left*plv.amt;if(S.notified)Object.keys(S.notified).forEach(k=>{if(k.indexOf(pl.id)===0&&k>=pl.id+'|2026-11')delete S.notified[k]})}else S.items.push(base(c58,plv));
+    done.push('ICICI ••5008')}
+  // ICICI Amazon ••3000
+  const c30=L4('3000');if(c30){const old=S.items.filter(i=>i.inBill&&i.emiCard===c30.id);const srcs=old.map(i=>i.src).filter(Boolean);S.items=S.items.filter(i=>!old.includes(i));
+    S.items.push(base(c30,{name:'ICICI Amazon ••3000 · EMIs on Call (4)',amt:22707.78,left:10,roi:18,loanAmt:247685.33,start:'2026-09',closing:'2027-07-20',blockMode:'emiLeft',srcs,note:'4 EMIs on Call (20 Aug) merged · from Oct statement'}));
+    S.items.push(base(c30,{name:'ICICI Amazon ••3000 · Merchant EMI 13,490',amt:2354.35,left:1,roi:16,loanAmt:13490,start:'2026-06',closing:'2026-11-13',blockMode:'emiLeft',note:'Last instalment'}));
+    done.push('ICICI ••3000')}
+  // HDFC Regalia ••0479
+  const c79=L4('0479');if(c79&&!S.items.some(i=>i.emiCard===c79.id&&/smartemi/i.test(i.name))){S.items.push(base(c79,{name:'HDFC Regalia ••0479 · SmartEMI 11,842',amt:2066,left:1,roi:16,loanAmt:11842,principalLeft:2039,plAsOf:'2026-10-02',start:'2026-06',closing:'2026-11-21',note:'Last instalment'}));done.push('HDFC Regalia')}
+  // UNI ••3277
+  const cu=L4('3277');if(cu){const ph=S.items.find(i=>tOf(i)==='loan'&&/uni|bob/i.test(i.name)&&!i.inBill);
+    const uv={name:'UNI BOB ••3277 · EMIs (9)',amt:14941.5,left:34,asOf:'2026-11',roi:17.4,loanAmt:412404,inBill:true,inBillFrom:'2026-09',emiCard:cu.id,mode:'card:'+cu.id,approx:true,start:'2026-09',closing:'2029-08-30',ok:false,note:'9 purchases converted 31 Aug · tenure estimated at 36 months — confirm EMI months and rate from the Uni app'};
+    if(ph)Object.assign(ph,uv);else S.items.push(base(cu,uv));done.push('UNI')}
+  // Axis Indian Oil ••2152
+  const cx=L4('2152');if(cx){cx.limit=632000;cx.due=8;cx.stmt=19;cx.stmtAvail=142271;cx.stmtAvailAsOf='2026-10-19';const b=bill(cx);if(b)b.day=8;
+    const ce=S.items.find(i=>tOf(i)==='loan'&&/axis/i.test(i.name)&&/emi/i.test(i.name));
+    const cev={name:'Axis Indian Oil ••2152 · Card EMI 2.87L',amt:13597,left:21,asOf:'2026-11',roi:11.6,principalLeft:287293,plAsOf:'2026-10-19',inBill:true,inBillFrom:'2026-11',emiCard:cx.id,mode:'card:'+cx.id,day:8,closing:'2028-07-19',ok:true,note:'From Oct statement (3 of 24 paid)'};
+    if(ce){Object.assign(ce,cev);ce.pending=cev.left*cev.amt}else S.items.push(base(cx,cev));
+    S.items.push(base(cx,{name:'Axis Indian Oil ••2152 · Purchase EMIs 24m (16)',amt:6108,left:23,principalLeft:142222,plAsOf:'2026-10-19',start:'2026-10',day:8,closing:'2028-09-19',note:'16 purchase EMIs merged · 1 of 24 paid in Oct'}));
+    S.items.push(base(cx,{name:'Axis Indian Oil ••2152 · Purchase EMIs 48m (3)',amt:3525,left:47,principalLeft:167355,plAsOf:'2026-10-19',start:'2026-10',day:8,closing:'2030-09-19',note:'3 education EMIs merged · 1 of 48 paid in Oct'}));
+    done.push('Axis Indian Oil')}
+  // Nothing due Nov: SBI ••6462, Axis IOC ••2152
+  [['6462','2026-11-15'],['2152','2026-11-08']].forEach(([l,d])=>{const c=L4(l),b=bill(c);if(!b)return;const k=b.id+'|2026-11';if(!(S.rec[k]&&+S.rec[k].amt>0))S.rec[k]={amt:0,paid:true,date:d,mode:'Nothing due (statement)'}});
+  // IndusInd: swap names + limits, loan on Pinnacle ••1513
+  const p7=L4('7846'),p5=L4('1513');if(p7&&p5){const n7=p7.name,l7=p7.limit,n5=p5.name,l5=p5.limit;
+    if(/pinnacle/i.test(n7)&&/rupay/i.test(n5)){p7.name=n5;p5.name=n7;p7.limit=l5;p5.limit=l7;[p7,p5].forEach(c=>{const b=bill(c);if(b)b.name=c.name+' bill'})}
+    const il=S.items.find(i=>tOf(i)==='loan'&&/indusind/i.test(i.name));
+    const iv={name:'IndusInd Pinnacle ••1513 · Loan on Card 3.51L',amt:12683.98,left:31,asOf:'2026-11',roi:14,loanAmt:351501,principalLeft:311003.94,plAsOf:'2026-10-15',inBill:true,inBillFrom:'2026-11',emiCard:p5.id,mode:'card:'+p5.id,day:p5.due||4,closing:'2029-05-15',ok:true,note:'Loan below credit limit · EMI incl. 18% GST on interest · 5 of 36 paid in Oct'};
+    if(il){Object.assign(il,iv);il.pending=iv.left*iv.amt}else S.items.push(base(p5,iv));done.push('IndusInd')}
+  if(done.length)logA('App','Card EMIs updated from your statements',done.join(', ')+' · ICICI 10L personal loan duplicate removed from To pay');
+  S.fixes.f15=true;return true;
 }
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
@@ -587,7 +630,7 @@ function isNameless(d){d=String(d||'').trim();if(!d)return true;
   if(!/\s/.test(d)&&/^[a-z]{1,4}$/.test(d))return true;
   return false}
 const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -611,7 +654,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -669,7 +712,7 @@ function entry(it,ym){
   const st=it.hold?'hold':paid?'paid':n<0?'over':n<=rem?'soon':'up';
   return{it,ym,date,key,r,n,paid,amt,st};
 }
-function entries(ym,sec){return S.items.filter(i=>!i.inBill&&(!sec||i.sec===sec)&&occurs(i,ym)).map(i=>entry(i,ym)).sort((a,b)=>a.date.localeCompare(b.date)||a.it.name.localeCompare(b.it.name))}
+function entries(ym,sec){return S.items.filter(i=>!(i.inBill&&(!i.inBillFrom||ym>=i.inBillFrom))&&(!sec||i.sec===sec)&&occurs(i,ym)).map(i=>entry(i,ym)).sort((a,b)=>a.date.localeCompare(b.date)||a.it.name.localeCompare(b.it.name))}
 function stLabel(x){
   const inc=isIn(x.it);
   if(x.st==='paid')return inc?'Received':'Paid';
@@ -678,7 +721,7 @@ function stLabel(x){
   if(x.st==='soon')return x.n===0?(inc?'Today':'Due today'):`In ${x.n}d`;
   return inc?'Expected':'Upcoming';
 }
-function loanLeft(it,ym){if(!+it.left)return null;const k=mdiff(it.asOf||START,ym);let l=+it.left-k;if(S.rec[it.id+'|'+ym]&&S.rec[it.id+'|'+ym].paid)l--;return Math.max(l,0)}
+function loanLeft(it,ym){if(!+it.left)return null;const k=mdiff(it.asOf||START,ym);let l=+it.left-(it.inBill?Math.max(k,0):k);if(!it.inBill&&S.rec[it.id+'|'+ym]&&S.rec[it.id+'|'+ym].paid)l--;return Math.max(l,0)}
 function loanEnd(it){return +it.left?addM(it.asOf||START,+it.left-1):null}
 function sub(x){
   const it=x.it,p=[];
@@ -770,12 +813,13 @@ function pools(){const P={};S.cards.forEach(c=>{if(c.pool){(P[c.pool]=P[c.pool]|
 function usageUnits(ym){const U=pools().map(p=>({name:p.name+' pool ('+p.cards.length+' cards)',limit:p.limit,used:p.cards.reduce((a,c)=>a+cardUse(c,ym),0),cards:p.cards}));
   S.cards.filter(c=>!c.pool).forEach(c=>U.push({name:c.name+(c.last4?' ••'+c.last4:''),limit:+c.limit||0,used:cardUse(c,ym),cards:[c]}));return U}
 function lastStmt(c){const t=today(),y=+t.slice(0,4),m=+t.slice(5,7),d=Math.min(+c.stmt||1,28);let ym=ymOf(t);if(+t.slice(8)<d)ym=addM(ym,-1);return ym+'-'+String(d).padStart(2,'0')}
-function emiOut(it){const ym=ymOf(today());if(it.hold)return 0;if(+it.principalLeft)return +it.principalLeft;
+function plNow(it,ym){const p=+it.principalLeft;if(!p)return 0;if(!(+it.left))return p;const n=loanLeft(it,ym);if(n==null)return p;return Math.max(0,Math.round(p*Math.min(n,+it.left)/+it.left))}
+function emiOut(it){const ym=ymOf(today());if(it.hold||it.noBlock)return 0;if(it.blockMode==='emiLeft'&&+it.amt&&+it.left){const n=loanLeft(it,ym);return Math.round((n||0)*it.amt)}if(+it.principalLeft)return plNow(it,ym);
   if(+it.amt&&+it.left){const n=loanLeft(it,ym);if(n==null||n<=0)return 0;const r=(+it.roi||0)/1200;return Math.round(r?it.amt*(1-Math.pow(1+r,-n))/r:it.amt*n)}
   return +it.loanAmt||0}
 function emiItems(c){return S.items.filter(i=>i.inBill&&i.emiCard===c.id&&!i.hold)}
 function emiBlocked(c){return emiItems(c).reduce((a,i)=>a+emiOut(i),0)}
-function emiApprox(c){return emiItems(c).some(i=>!+i.principalLeft&&!(+i.amt&&+i.left))}
+function emiApprox(c){return emiItems(c).some(i=>!i.noBlock&&(i.approx||(!+i.principalLeft&&!(+i.amt&&+i.left))))}
 function cardOwed(c){const m='card:'+c.id,it=S.items.find(i=>i.cardId===c.id),now=ymOf(today());let bill=0;
   if(it)for(const ym of [addM(now,1),now,addM(now,-1)]){const r=S.rec[it.id+'|'+ym];if(r&&+r.amt>0){if(!r.paid)bill=+r.amt;break}}
   const st=lastStmt(c),sp=S.spends.filter(s=>s.mode===m&&s.date>st).reduce((a,s)=>a+ +s.amount,0);
@@ -889,7 +933,7 @@ function findIns(m){
 const FREQ_MONTHS=(f,mo)=>{f=String(f||'').toLowerCase();if(/month/.test(f))return null;if(/quarter/.test(f))return[0,3,6,9].map(k=>((mo-1+k)%12)+1).sort((a,b)=>a-b);if(/half/.test(f))return[mo,((mo+5)%12)+1].sort((a,b)=>a-b);return[mo]};
 function payerItem(m){S.payers=S.payers||{};const id=S.payers[String(m.payer||'').toLowerCase()];return id?S.items.find(i=>i.id===id):null}
 function mailText(m){
-  if(m.kind==='cardemi'){const f=findCard(m.bank,m.last4),ex=S.items.find(i=>i.src===m.id);
+  if(m.kind==='cardemi'){const f=findCard(m.bank,m.last4),ex=S.items.find(i=>i.src===m.id||(i.srcs||[]).includes(m.id));
     return{t:`Card EMI: ${f?f.c.name:m.bank}${m.last4?' ••'+m.last4:''} · ${rs(m.amt)}`,s:`Converted ${dLabel(m.date)} ${m.date.slice(0,4)}${f?'':' · card not in your list'}`,ok:!!f&&!ex,dup:!!ex,f:f||null,ce:f}}
   if(m.kind==='income'){const it=payerItem(m),e=it&&occurs(it,ymOf(m.date))?entry(it,ymOf(m.date)):null;
     return{t:it?`${it.name} received ${rs(m.amt)}`:`${rs(m.amt)} from ${m.payer}`,s:`${dLabel(m.date)} · via ${m.via||'bank'}${m.cur&&m.cur!=='INR'?' · '+m.cur:''}${it?'':' · tap Assign to choose the income'}`,ok:!!e,dup:!!(e&&e.paid&&near(e.amt,m.amt)),f:it?{}:null,inc:e,assign:!it}}
@@ -1114,7 +1158,7 @@ function chart(){
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Money in and out by month" style="width:100%;height:auto"><line x1="0" y1="140" x2="${W}" y2="140" stroke="var(--border)"/>${bars}</svg>
    <div class="legend"><span><i style="background:var(--green)"></i>Came in</span><span><i style="background:var(--red)"></i>Paid out</span>${months.length<3?'<span>Builds up month by month</span>':''}</div>`;
 }
-function toPay(i,ym){if(+i.principalLeft)return +i.principalLeft;const l=loanLeft(i,ym);if(l!=null&&+i.amt)return l*(+i.amt);return i.inBill?(+i.loanAmt||0):0}
+function toPay(i,ym){if(+i.principalLeft)return plNow(i,ym);const l=loanLeft(i,ym);if(l!=null&&+i.amt)return l*(+i.amt);return i.inBill?(+i.loanAmt||0):0}
 function shortRs(v){v=Math.round(v||0);return v>=99995e2?'₹'+(v/1e7).toFixed(2)+'Cr':v>=99500?'₹'+(v/1e5).toFixed(1)+'L':v>=1e3?'₹'+(v/1e3).toFixed(0)+'K':'₹'+v}
 function activeLoans(){return S.items.filter(i=>tOf(i)==='loan'&&!i.hold&&(i.inBill||occurs(i,YM)))}
 function prepayOrder(){
@@ -1232,7 +1276,7 @@ function vManage(){
     <button class="tk ed" onclick="${x.kind==='card'?`cardForm('${x.id}')`:`editItem('${x.id}')`}" aria-label="Edit">✏️</button><button class="tk ed" onclick="${x.kind==='card'?`delCard('${x.id}')`:`delItem('${x.id}')`}" aria-label="Delete">🗑</button><button class="tk okb" onclick="okReview('${x.kind}','${x.id}')" aria-label="Looks right">✓</button></div>`).join('')}</section>`:''}
   ${secsIn}
   ${q&&!cards.length?'':(()=>{const body=cards.map(c=>{const b=S.items.find(i=>i.cardId===c.id),bl=b?[b.hold?"Don't pay":(+b.amt?'Bill '+rs(b.amt):'Bill varies'),b.mode?'usually via '+modeName(b.mode):''].filter(Boolean).join(' · '):'No bill reminder';
-      return `<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Bill ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · limit '+shortRs(c.limit):''}</small><small>${esc(bl)}</small>${emiBlocked(c)?`<small>EMI blocked ${shortRs(emiBlocked(c))}${emiApprox(c)?' (approx)':''} · ${emiItems(c).length} EMI${emiItems(c).length>1?'s':''}</small>`:''}</button>${b?`<button class="tk ed" onclick="editItem('${b.id}')" aria-label="Bill settings for ${esc(c.name)}">🧾</button>`:''}<button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit card">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete card">🗑</button></div>`}).join('')
+      return `<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Bill ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · limit '+shortRs(c.limit):''}</small><small>${esc(bl)}</small>${+c.stmtAvail?`<small>Bank says available ${shortRs(c.stmtAvail)} (statement ${dLabel(c.stmtAvailAsOf)})</small>`:''}${emiBlocked(c)?`<small>EMI blocked ${shortRs(emiBlocked(c))}${emiApprox(c)?' (approx)':''} · ${emiItems(c).length} EMI${emiItems(c).length>1?'s':''}</small>`:''}</button>${b?`<button class="tk ed" onclick="editItem('${b.id}')" aria-label="Bill settings for ${esc(c.name)}">🧾</button>`:''}<button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit card">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete card">🗑</button></div>`}).join('')
       +(extraBills.length?'<div class="cl">Other card payments</div>'+extraBills.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc((+i.amt?rs(i.amt):'Varies')+' · '+ord(i.day)+' monthly')}</small></button><button class="tk ed" onclick="editItem('${i.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delItem('${i.id}')" aria-label="Delete">🗑</button></div>`).join(''):'');
      return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards · bills &amp; billing cycle',cycleTable()+'<div class="cl">Your cards</div>'+body,'#1a63e8',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
   ${secs}
