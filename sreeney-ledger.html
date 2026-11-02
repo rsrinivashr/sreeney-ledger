@@ -144,9 +144,9 @@ button{cursor:pointer}
 .qa span{font-size:22px}.qa b{font-weight:800}.qa small{color:var(--muted);font-size:12px}
 .f textarea{min-height:120px}
 .backnow{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff7e0;border:1px solid #f3dc9b;border-radius:12px;padding:9px 12px;margin-bottom:10px;font-size:13.5px;color:#7a5d06;cursor:pointer}.backnow b{background:#1e3a8a;color:#fff;border-radius:16px;padding:5px 12px;font-size:13px}
-.sumbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:10px}
+.sumbar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:10px}
 .sumbar>button{all:unset;cursor:pointer;display:block;align-self:start}.sumbar span{display:block;font-size:12px;font-weight:600;color:var(--muted)}
-.sumbar b{display:block;font-size:clamp(18px,5vw,26px);font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.sumbar b{display:block;font-size:clamp(14.5px,3.9vw,25px);font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
 .sumbar small{display:block;font-size:11.5px;color:var(--red);font-weight:600;margin-top:2px}
 .card2:has(>.mh:first-child){border-top:1px solid var(--border)}
 .card2>.mh:first-child{background:linear-gradient(90deg,var(--c,var(--accent)) -400%,#fff 100%);background:linear-gradient(90deg,color-mix(in srgb,var(--c,var(--accent)) 30%,#fff),color-mix(in srgb,var(--c,var(--accent)) 5%,#fff) 92%);margin:-12px -14px 8px;padding:8px 10px 8px 14px;border-radius:15px 15px 0 0}
@@ -176,7 +176,7 @@ button{cursor:pointer}
 .salc.ok{border-left-color:var(--green)}.salc.short{border-left-color:var(--red)}
 .salc>div,.salc>button{text-align:left;background:none;border:0;padding:0}
 .salc span{display:block;font-size:12px;font-weight:600;color:var(--muted)}
-.salc b{display:block;font-size:19px;font-weight:800}.salc small{color:var(--muted);font-size:12px}
+.salc b{display:block;font-size:19px;font-weight:800}.salc small{display:block;color:var(--muted);font-size:12px}
 .salc>button b{color:var(--accent)}
 .salc .verdict{grid-column:1/-1;font-weight:800;font-size:15px}.salc.ok .verdict{color:var(--green)}.salc.short .verdict{color:var(--red)}
 .banner{width:100%;text-align:left;border:1px solid var(--ambb);background:var(--amb);color:var(--amber);font-weight:700;border-radius:12px;padding:10px 12px;margin-bottom:10px}
@@ -1177,10 +1177,10 @@ function matchChip(it){return chip==='pay'?!isIn(it):kindOf(it)===chip}
 function monthParts(){const cur=ymOf(today()),seen={};const due=[...earlierOverdue(),...entries(cur)].filter(x=>!isIn(x.it)&&!x.it.hold&&!x.it.xfer&&!x.paid&&!seen[x.key]&&(seen[x.key]=1));return{due,cur}}
 function salaryCheck(){
   const cur=ymOf(today());if(YM!==cur)return'';
-  const {due}=monthParts(),sum=due.reduce((a,x)=>a+amtE(x),0),unk=due.filter(x=>!amtE(x)).length;
+  const {due}=monthParts(),T=totals(cur),sum=due.reduce((a,x)=>a+amtE(x),0),unk=due.filter(x=>!amtE(x)).length;
   const c=S.cash,bn=c?bankNow():null,left=c?bn.now-sum:null;
   return `<section class="salc ${left==null?'':left>=0?'ok':'short'}">
-   <button class="dueb" onclick="salaryBreak()"><span>Still to pay this month ›</span><b>${rs(sum)}</b><small>${due.length} payments${unk?` · ${unk} with no amount yet`:''} · tap for breakdown</small></button>
+   <button class="dueb" onclick="salaryBreak()"><span>Still to pay this month ›</span><b>${rs(sum)}</b><small>Total needed ${rs(T.paid+T.due)} − paid ${rs(T.paid)}${T.early?' + overdue '+rs(T.early):''}</small><small>${due.length} payments${unk?` · ${unk} with no amount yet`:''} · tap for breakdown</small></button>
    <button onclick="cashForm()"><span>In bank now</span><b>${c?rs(bn.now):'Tap to add'}</b><small>${c?(bn.inn||bn.out?`${rs(c.amt)} on ${dLabel(c.date)} + ${rs(bn.inn)} in − ${rs(bn.out)} paid`:'typed '+dLabel(c.date)):'your balance'}</small></button>
    ${left!=null?`<div class="verdict">${left>=0?`✓ Bank has ${rs(left)} spare this month`:`⚠ Bank is short by ${rs(-left)} · to arrange in this month`}</div>`:''}
   </section>`;
@@ -1197,7 +1197,7 @@ function salaryBreak(){const{due,cur}=monthParts();
   const sum=S2(due),unk=due.filter(x=>!amtE(x)),c=S.cash,bn=c?bankNow():null;
   const tr=(n,v,sm)=>`<tr><td>${n}${sm?`<small>${sm}</small>`:''}</td><td>${rs(v)}</td></tr>`;
   openModal(`<h2>To pay this month</h2><div class="sub">Same amounts as the To pay list. Card bills not generated yet count as ₹0 until the bill arrives.</div>
-   <table class="bk">${ear.length?tr('Overdue from earlier months',S2(ear),ear.length+' items'):''}
+   <table class="bk">${(()=>{const T=totals(cur);return tr('Total needed · '+mName(cur),T.paid+T.due,'Paid '+rs(T.paid)+' + still to pay '+rs(T.due))})()}${ear.length?tr('Overdue from earlier months',S2(ear),ear.length+' items'):''}
    ${tr('Still to pay · '+mName(cur),S2(thisM),thisM.length+' items · same as To pay')}
    <tr class="t"><td>Total to pay this month</td><td>${rs(sum)}</td></tr>
    ${c?tr('In bank now',bn.now,`${rs(c.amt)} typed ${dLabel(c.date)} + ${rs(bn.inn)} came in − ${rs(bn.out)} paid from bank since`)+`<tr class="t"><td>${bn.now-sum>=0?'Bank has spare':'Bank is short by'}</td><td style="color:${bn.now-sum>=0?'var(--green)':'var(--red)'}">${rs(Math.abs(bn.now-sum))}</td></tr>`:''}</table>
@@ -1210,6 +1210,7 @@ function cashForm(){openModal(`<h2>Money in bank</h2><div class="sub">Total you 
 function vPay(){
   const t=totals(YM),cur=ymOf(today()),rv=reviewList().length;
   const top=`<section class="sumbar">
+    <button class="lnk2" onclick="goTo('summary',null,'sMonth')"><span>Total needed ›</span><b style="color:var(--head)">${rs(t.paid+t.due)}</b></button>
     <button class="lnk2" onclick="chip='in';render()"><span>Came in ›</span><b class="in">${rs(t.inGot)}</b></button>
     <button class="lnk2" onclick="chip='pay';showPaid=true;render();setTimeout(()=>{const e=document.querySelector('.gh.g');if(e)e.scrollIntoView({behavior:'smooth'})},50)"><span>Paid out ›</span><b class="out">${rs(t.paid)}</b></button>
     <button class="lnk2" onclick="goTo('summary',null,'sMonth')"><span>Still to pay ›</span><b class="due">${rs(t.due)}</b>${t.early?`<small>+ ${rs(t.early)} overdue from earlier</small>`:''}</button></section>`;
@@ -1267,6 +1268,7 @@ function prepayOrder(){
   const withR=ls.filter(i=>+i.roi).sort((a,b)=>(b.roi-a.roi)||(toPay(a,YM)-toPay(b,YM))),noR=ls.filter(i=>!+i.roi);
   return{withR,noR};
 }
+function debtFree(){const own=activeLoans().filter(i=>!i.inBill),ends=own.map(i=>[i,loanEnd(i)]).filter(x=>x[1]),last=ends.slice().sort((a,b)=>b[1].localeCompare(a[1]))[0];if(!last)return null;return{m:mdiff(ymOf(today()),last[1])+1,last}}
 function loanInsights(){
   const ls=activeLoans();if(!ls.length)return'';
   const own=ls.filter(i=>!i.inBill),cemi=ls.filter(i=>i.inBill);
@@ -1305,9 +1307,9 @@ function masterSnap(){
   let yr=0;for(let k=0;k<12;k++)yr+=entries(addM(ym,k),'ins').filter(x=>!x.it.hold).reduce((a,x)=>a+amtE(x),0);
   const need=t.due+t.early,sh=shortNow();
   const r=(ic,n,v,sm,on)=>`<button onclick="${on}"><span>${ic} ${n} ›${sm?`<small>${sm}</small>`:''}</span><b>${rs(v)}</b></button>`;
-  const bars=[['🏦','All loans owed',loansOwed,'#ea7a1f'],['💰','Funds required',need,'#1f9d55'],['💳','Cards outstanding',cardOut,'#2f6fe0'],['🔁','All EMIs',bankEmi+cemiT,'#d97706'],['🎓','Education',sum(edu),'#6366f1'],['🛡️','Insurance',sum(ins),'#a855f7'],['🏠','Other expenses',sum(isO),'#0f9fa8'],['🛒','Swiped',tsw,'#d29b0b']];
+  const bars=[['🏦','All loans owed',loansOwed,'#ea7a1f'],['💰','Funds required this month ('+mName(ym)+')',need,'#1f9d55'],['💳','Cards outstanding',cardOut,'#2f6fe0'],['🔁','All EMIs',bankEmi+cemiT,'#d97706'],['🎓','Education',sum(edu),'#6366f1'],['🛡️','Insurance',sum(ins),'#a855f7'],['🏠','Other expenses',sum(isO),'#0f9fa8'],['🛒','Swiped',tsw,'#d29b0b']];
   const lg=v=>Math.log10(Math.max(v,1)),lmax=Math.max(4,...bars.map(b=>lg(b[2]))),lmin=3;
-  const chartH=`<div style="margin:6px 0 10px">${bars.map(([ic,n,v,c])=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${ic} ${n}</span><b style="font-variant-numeric:tabular-nums">${rs(v)}</b></div><div style="height:9px;background:var(--border);border-radius:6px;margin-top:3px"><i style="display:block;height:9px;width:${v>0?Math.max((lg(v)-lmin)/(lmax-lmin)*100,2):0}%;background:${c};border-radius:6px"></i></div></div>`).join('')}<div class="hint" style="margin:2px 0 0">Bars use a squeezed scale so the big loan amount doesn't hide the small ones.</div></div>`;
+  const chartH=`<div style="margin:6px 0 10px">${bars.map(([ic,n,v,c])=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${ic} ${n}</span><b style="font-variant-numeric:tabular-nums">${rs(v)}</b></div><div style="height:9px;background:var(--border);border-radius:6px;margin-top:3px"><i style="display:block;height:9px;width:${v>0?Math.max((lg(v)-lmin)/(lmax-lmin)*100,2):0}%;background:${c};border-radius:6px"></i></div>${n==='All loans owed'&&debtFree()?(d=>`<div style="font-size:12.5px;margin-top:4px"><b>🏁 Debt-free in ${d.m} months (${(d.m/12).toFixed(1)} years)</b> <span style="color:var(--muted)">· Last EMI ${mName(d.last[1])} · ${esc(d.last[0].name)}</span></div>`)(debtFree()):''}</div>`).join('')}<div class="hint" style="margin:2px 0 0">Bars use a squeezed scale so the big loan amount doesn't hide the small ones.</div></div>`;
   const body=`${chartH}<div class="sub">Everything in one place · ${mName(ym)} · updated ${now.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}, ${now.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})} · tap a line to open it</div>
    <div class="snap">
     ${r('💳','All credit cards outstanding',cardOut,'Unpaid bills + new swipes (EMIs not included)',"goTo('manage',null,'mcards')")}
@@ -1317,10 +1319,10 @@ function masterSnap(){
     ${r('🏠','Other monthly expenses',sum(isO),'Home, utilities, SIPs · '+shortRs(left(isO))+' still to pay',"goTo('pay','bill')")}
     ${r('🛡️','Insurance this month',sum(ins),'Next 12 months '+shortRs(yr)+(left(ins)?' · '+shortRs(left(ins))+' still to pay':''),"goTo('manage',null,'ins')")}
     ${r('🎓','Education fees this month',sum(edu),left(edu)?shortRs(left(edu))+' still to pay':'All paid',"goTo('manage',null,'edu')")}
-    ${r('💰','Funds required this month',need,'Still to pay'+(t.early?' + overdue from earlier':'')+' · same as To pay'+(t.noBill?' · '+t.noBill+' bills have no amount yet':''),"goTo('pay','pay')")}
+    ${r('💰','Funds required this month ('+mName(ym)+')',need,'Still to pay'+(t.early?' + overdue from earlier':'')+' · same as To pay'+(t.noBill?' · '+t.noBill+' bills have no amount yet':''),"goTo('pay','pay')")}
     ${sh?`<button class="gt" onclick="salaryBreak()"><span>${sh.left>=0?'✅ Bank has spare':'⚠️ Bank is short by'} ›<small>In bank now ${rs(sh.bank)} − to pay this month ${rs(sh.sum)}${sh.left<0?' · to arrange in this month':''}</small></span><b style="color:${sh.left>=0?'var(--green)':'var(--red)'}">${rs(Math.abs(sh.left))}</b></button>`:`<button class="gt" onclick="goTo('pay','pay')"><span>Grand total · needed this month ›</span><b>${rs(need)}</b></button>`}
    </div>`;
-  return fold('sSnap','📈 Financial Master Snapshot',`Needed ${shortRs(need)} · loans owed ${shortRs(loansOwed)}${sh?' · '+(sh.left>=0?'spare ':'short ')+shortRs(Math.abs(sh.left)):''}`,body,'#1f9d55',true);
+  return fold('sSnap','📈 Financial Master Snapshot',`Needed this month (${mName(ym)}) ${shortRs(need)} · loans owed ${shortRs(loansOwed)}${sh?' · '+(sh.left>=0?'spare ':'short ')+shortRs(Math.abs(sh.left)):''}`,body,'#1f9d55',true);
 }
 function thisMonth(){
   const ym=YM,t=totals(ym),now=new Date(),secs={};S.secs.forEach(x=>secs[x.k]=x);
@@ -1341,10 +1343,10 @@ function thisMonth(){
   let yr=0;for(let k=0;k<12;k++)yr+=entries(addM(ym,k),'ins').filter(x=>!x.it.hold).reduce((a,x)=>a+amtE(x),0);
   const nb=segs.reduce((a,g)=>a+g.nb,0);
   const body=`<div class="sub">${mName(ym)} · updated ${now.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}, ${now.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})} · same numbers as To pay</div>
-   <div class="tm"><div><span>Planned</span><b>${shortRs(tot)}</b></div><div><span>Paid</span><b style="color:var(--green)">${shortRs(t.paid)}</b></div><div><span>Still to pay</span><b style="color:var(--amber)">${shortRs(t.due)}</b></div></div>
-   ${tot?`<div class="dn"><svg viewBox="0 0 180 180" role="img" aria-label="This month by section">${arcs}<text x="90" y="86" text-anchor="middle" font-size="11" fill="var(--muted)">Planned</text><text x="90" y="104" text-anchor="middle" font-size="16" font-weight="800" fill="var(--text)">${shortC(tot)}</text></svg>
+   <div class="tm"><div><span>Total needed</span><b>${shortRs(tot)}</b></div><div><span>Paid</span><b style="color:var(--green)">${shortRs(t.paid)}</b></div><div><span>Still to pay</span><b style="color:var(--amber)">${shortRs(t.due)}</b></div></div>
+   ${tot?`<div class="dn"><svg viewBox="0 0 180 180" role="img" aria-label="This month by section">${arcs}<text x="90" y="86" text-anchor="middle" font-size="11" fill="var(--muted)">Total needed</text><text x="90" y="104" text-anchor="middle" font-size="16" font-weight="800" fill="var(--text)">${shortC(tot)}</text></svg>
    <div class="dl" style="min-width:220px">${segs.map(g=>`<div style="display:block;cursor:pointer" onclick="goTo('pay','${g.k==='cards'?'card':g.k==='loans'?'loan':'bill'}')"><div style="display:flex;align-items:center;gap:8px"><i style="background:${g.c}"></i><span>${esc(g.n)}</span><b>${shortRs(g.plan)}${tot?' · '+Math.round(g.plan/tot*100)+'%':''}</b></div><div class="bar thin" style="margin:3px 0 0 18px"><i style="width:${g.plan?Math.min(g.paid/g.plan*100,100):0}%;background:${g.c}"></i></div><small style="display:block;margin-left:18px;color:var(--muted);font-size:11.5px">Paid ${rs(g.paid)}${g.left?' · to pay '+rs(g.left):g.plan?' · done ✓':''}${g.nb?' · '+g.nb+' with no amount yet':''}</small></div>`).join('')}</div></div>`:'<div class="empty">Nothing planned.</div>'}
-   <div class="sum3"><span>Planned = Paid + Still to pay</span><b>${rs(tot)}</b>
+   <div class="sum3"><span>Total needed = Paid + Still to pay</span><b>${rs(tot)}</b>
     ${nb?`<span class="s">${nb} bills have no amount yet (card bills not generated, power, water…) — counted as ₹0 until known</span>`:''}</div>
    <div class="gh">Also this month (not added above)</div>
    <div class="sum3"><span>🔁 All EMIs · bank loans ${shortRs(bankEmi)} + card EMIs ${shortRs(cemiT)}</span><b>${rs(bankEmi+cemiT)}</b>
@@ -1354,7 +1356,7 @@ function thisMonth(){
     <span class="s">Swipes go into next month's card bills</span>
     <span>🛡️ Insurance · next 12 months</span><b>${rs(yr)}</b>
     <span class="lnk2" onclick="goTo('summary',null,'sLoans')">🏦 Loan balances</span><b class="lnk2" onclick="goTo('summary',null,'sLoans')">see Loans ›</b></div>`;
-  return fold('sMonth','📋 This month',`Planned ${shortRs(tot)} · paid ${shortRs(t.paid)} · still to pay ${shortRs(t.due)}`,body,'#8b5cf6',false);
+  return fold('sMonth','📋 This month',`Total needed ${shortRs(tot)} · paid ${shortRs(t.paid)} · still to pay ${shortRs(t.due)}`,body,'#8b5cf6',false);
 }
 function cardInsights(){
   if(!S.cards.length)return'';
