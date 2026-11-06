@@ -264,6 +264,50 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#b42335}.report .rg
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#0f172a;color:#fff;padding:10px 14px;border-radius:12px;z-index:70;font-size:14px;font-weight:600;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow)}
 .toast button{background:none;border:0;color:#7fb0ff;font-weight:800}
 
+
+/* ===== clean redesign (Nov 2026): one colour, plain cards ===== */
+:root{--accent:#1e3a8a;--accent2:#1e3a8a;--acsoft:rgba(30,58,138,.07);--bg:#f4f5f8;--shadow:0 1px 2px rgba(15,23,42,.05)}
+.ribbon{background:#1e3a8a;box-shadow:none;border-radius:16px}
+.tag{display:none}
+.card2,.list{border:1px solid var(--border)!important;border-top:1px solid var(--border)!important;border-radius:14px;box-shadow:var(--shadow)}
+.card2>.mh:first-child{background:none!important;margin:-6px 0 4px!important;padding:2px 0!important;border-radius:0!important}
+.card2>.mh:first-child:last-child{margin-bottom:-6px!important}
+.card2>.mh:first-child .rb b{color:var(--text)!important;font-size:15.5px}
+.card2>.mh:first-child .tk.ed{box-shadow:none!important;border:1px solid var(--border)!important;background:var(--panel)!important}
+.tg{background:none!important;color:var(--muted)!important;padding:0!important;margin-right:6px!important;font-size:.68em!important;letter-spacing:.5px}
+.chips button,.chips button[class*="c-"]{background:var(--panel)!important;color:var(--head)!important;border-color:var(--border)!important}
+.chips button.on{background:#1e3a8a!important;color:#fff!important;border-color:#1e3a8a!important}
+.gh.a,.gh.g{color:var(--muted)}
+.st-soon .tk{border-color:var(--border)}.st-soon .rb small{color:var(--muted);font-weight:400}
+.bar i{background:#1e3a8a}
+.fab{background:#1e3a8a;box-shadow:0 6px 16px rgba(30,58,138,.3)}
+.backnow{background:var(--panel);border-color:var(--border);color:var(--head)}.backnow b{background:#1e3a8a}
+.banner{background:var(--panel);border-color:var(--border);color:var(--head)}
+.pendbar{background:var(--alt)}.pendbar span{color:var(--muted)}
+.tabs button.on{background:#1e3a8a;border-color:#1e3a8a}
+.top1{padding:14px 16px 6px}.top1 .lab{font-size:12.5px;font-weight:600;color:var(--muted)}
+.top1 .big{all:unset;cursor:pointer;display:block;font-size:30px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.top1 .pl{display:flex;justify-content:space-between;font-size:13.5px;margin:2px 0 6px}
+.kr{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:10px 0;border-top:1px solid var(--border);font-size:14.5px}
+.kr small{display:block;font-size:12px;color:var(--muted);font-weight:400}.kr b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.kr.short,.kr.short b{color:var(--red);font-weight:800}.kr.ok,.kr.ok b{color:var(--green);font-weight:800}
+.tb{width:100%;border-collapse:collapse;font-size:13.5px}.tb th{text-align:left;font-size:11.5px;font-weight:700;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--border)}
+.tb td{padding:8px 4px;border-bottom:1px solid var(--border);vertical-align:top}.tb td.n,.tb th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb small{display:block;color:var(--muted);font-size:11.5px}
+.srch{flex:none;height:36px;width:40px;border-radius:18px;border:1px solid var(--border);background:var(--panel)}
+
+/* login (navy) */
+#lock{background:radial-gradient(120% 80% at 50% 0%,#2a4aa8 0%,#1e3a8a 45%,#0f1f4d 100%)!important;gap:14px}
+#lock .lg{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font:800 24px Inter,Arial,sans-serif;letter-spacing:-1px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);margin-bottom:4px}
+#lock h1{font-size:24px;letter-spacing:-.3px}
+#pinMsg{font-size:14px;opacity:.8;font-weight:400;margin-top:-6px}
+#lock .dots{gap:14px;margin:10px 0 6px}#lock .dots i{width:12px;height:12px;border-color:rgba(255,255,255,.7)}
+#lock .pad{grid-template-columns:repeat(3,68px);gap:14px 22px}
+#lock .pad button{height:68px;width:68px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);font-size:26px;font-weight:500;backdrop-filter:none}
+#lock .pad button:active{background:rgba(255,255,255,.22)}
+#lock .pad button[data-k="⌫"]{background:none;border:0;font-size:22px}
+#forgot{text-decoration:none!important;font-weight:600!important;opacity:.85;margin-top:4px}
+#lock .lf{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom,0px));font-size:12px;opacity:.55}
 @media(max-width:760px){
   .tabs{display:none}
   .wrap{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
@@ -288,12 +332,14 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#b42335}.report .rg
   <button id="gBtn" class="hide" onclick="signIn()" style="height:48px;padding:0 22px;border-radius:24px;border:0;background:#fff;color:#1f2937;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.18)"><span style="font-size:18px;color:#1a63e8;font-weight:800">G</span> Sign in with Google</button>
 </div>
 <div id="lock">
-  <h1>Sreeney <span>Ledger</span></h1>
+  <div class="lg" aria-hidden="true">SL</div>
+  <h1>Sreeney Ledger</h1>
   <div id="pinMsg">Enter PIN</div>
   <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="pad" id="pad"></div>
   <div id="pinHint" class="hide" style="font-size:13px;opacity:.9">Default PIN 123456 — change it in ⚙️ Settings</div>
-  <button id="forgot" onclick="forgotPin()" style="background:none;border:0;color:#fff;font-weight:700;text-decoration:underline;font-size:14px">Forgot PIN? Reset</button>
+  <button id="forgot" onclick="forgotPin()" style="background:none;border:0;color:#fff;font-weight:700;text-decoration:underline;font-size:14px">Forgot PIN?</button>
+  <div class="lf">🔒 Private · synced securely</div>
 </div>
 
 <div class="wrap">
@@ -816,7 +862,7 @@ function sub(x){
 
 /* ---------- PIN ---------- */
 let pinBuf='',pinStage=S.pin?'enter':'new',pinFirst='';
-function pinUI(){$('#pinMsg').textContent={enter:'Enter 6-digit PIN',new:'Set a new 6-digit PIN',confirm:'Enter it again'}[pinStage];$('#pinHint').classList.toggle('hide',!(pinStage==='enter'&&S.pin===DEF_PIN));$('#forgot').classList.toggle('hide',pinStage!=='enter');[...$('#dots').children].forEach((d,i)=>d.classList.toggle('on',i<pinBuf.length))}
+function pinUI(){$('#pinMsg').textContent={enter:'Enter your PIN',new:'Set a new 6-digit PIN',confirm:'Enter it again'}[pinStage];$('#pinHint').classList.toggle('hide',!(pinStage==='enter'&&S.pin===DEF_PIN));$('#forgot').classList.toggle('hide',pinStage!=='enter');[...$('#dots').children].forEach((d,i)=>d.classList.toggle('on',i<pinBuf.length))}
 $('#pad').innerHTML=['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k=>k?`<button data-k="${k}" aria-label="${k==='⌫'?'Delete':k}">${k}</button>`:'<span></span>').join('');
 function pinKey(k){if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<6)pinBuf+=k;pinUI();if(pinBuf.length===6)setTimeout(pinDone,120)}
 $('#pad').onclick=e=>{const k=e.target.dataset.k;if(k)pinKey(k)};
@@ -1171,6 +1217,7 @@ function emailReader(){
    <div class="acts"><button class="btn pri" onclick="closeModal()">Done</button></div>`);
 }
 /* ---------- screen 1: To pay ---------- */
+let showQ=false;
 const CHIPS=[['pay','All payments'],['card','Cards'],['loan','Loans'],['bill','Bills'],['in','Income'],['exp','Expenses']];
 function kindOf(it){const t=tOf(it);return t==='in'?'in':t==='card'?'card':t==='loan'?'loan':'bill'}
 function matchChip(it){return chip==='pay'?!isIn(it):kindOf(it)===chip}
@@ -1214,13 +1261,20 @@ function cashForm(){openModal(`<h2>Money in bank</h2><div class="sub">Total you 
   <div class="acts"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="setCash()">Save</button></div>`)}
 function vPay(){
   const t=totals(YM),cur=ymOf(today()),rv=reviewList().length;
-  const top=`<section class="sumbar">
-    <button class="lnk2" onclick="goTo('summary',null,'sMonth')"><span>Total to pay this month ›</span><b style="color:var(--head)">${rs(t.paid+t.due)}</b><small style="color:var(--muted)">= ${rs(t.paid)} paid + ${rs(t.due)} still to pay</small>${YM===ymOf(today())&&addedNote()?`<small style="color:#1e7a46">${addedNote()}</small>`:''}</button>
-    <button class="lnk2" onclick="chip='in';render()"><span>Came in ›</span><b class="in">${rs(t.inGot)}</b></button>
-    <button class="lnk2" onclick="chip='pay';showPaid=true;render();setTimeout(()=>{const e=document.querySelector('.gh.g');if(e)e.scrollIntoView({behavior:'smooth'})},50)"><span>Paid out ›</span><b class="out">${rs(t.paid)}</b></button>
-    <button class="lnk2" onclick="goTo('summary',null,'sMonth')"><span>Still to pay ›</span><b class="due">${rs(t.due)}</b>${t.early?`<small>+ ${rs(t.early)} overdue from earlier</small>`:''}</button></section>`;
-  const chips=`<div class="chips">${CHIPS.map(([k,l])=>`<button class="${chip===k?'on':''} c-${k}" onclick="chip='${k}';showPaid=false;render()">${l}</button>`).join('')}</div>
-   <div class="search"><span aria-hidden="true">🔍</span><input id="q" placeholder="Search bills, loans, cards" value="${esc(Q)}" oninput="Q=this.value;render()" aria-label="Search">${Q?`<button onclick="Q='';render()" aria-label="Clear">✕</button>`:''}</div>`;
+  const isCur=YM===cur,tot=t.paid+t.due,sh=isCur?shortNow():null,an=isCur?addedNote():'';
+  const top=`<section class="list top1">
+    <div class="lab">Total to pay · ${mName(YM)}</div>
+    <button class="big" onclick="${isCur?'salaryBreak()':''}">${rs(tot)}</button>
+    <div class="bar" style="height:8px;margin:6px 0"><i style="width:${tot?Math.min(t.paid/tot*100,100):0}%"></i></div>
+    <div class="pl"><span>Paid ${rs(t.paid)}</span><b>Left ${rs(t.due)}</b></div>
+    ${an?`<div class="hint" style="color:var(--green)">${an}</div>`:''}
+    ${t.early?`<button class="kr" onclick="salaryBreak()"><span>Overdue from earlier months</span><b style="color:var(--red)">${rs(t.early)}</b></button>`:''}
+    <button class="kr" onclick="chip='in';showPaid=false;render()"><span>Came in</span><b>${rs(t.inGot)}</b></button>
+    ${isCur?`<button class="kr" onclick="cashForm()"><span>In bank now<small>${S.cash?'tap to update':'tap to add your balance'}</small></span><b>${S.cash?rs(bankNow().now):'—'}</b></button>
+    ${sh?`<button class="kr ${sh.left>=0?'ok':'short'}" onclick="salaryBreak()"><span>${sh.left>=0?'Spare this month':'Short by'}<small>${sh.left>=0?'after all bills':'to arrange in this month'}</small></span><b>${rs(Math.abs(sh.left))}</b></button>`:''}`:''}
+  </section>`;
+  const chips=`<div class="chips">${CHIPS.map(([k,l])=>`<button class="${chip===k?'on':''} c-${k}" onclick="chip='${k}';showPaid=false;render()">${k==='pay'?'All':l}</button>`).join('')}<button class="srch" onclick="showQ=!showQ;if(!showQ)Q='';render();setTimeout(()=>{const e=document.getElementById('q');if(e)e.focus()},30)" aria-label="Search">🔍</button></div>
+   ${showQ||Q?`<div class="search"><span aria-hidden="true">🔍</span><input id="q" placeholder="Search bills, loans, cards" value="${esc(Q)}" oninput="Q=this.value;render()" aria-label="Search">${Q?`<button onclick="Q='';render()" aria-label="Clear">✕</button>`:''}</div>`:''}`;
   let body='',mbUsed=false;const mb=mailBox();
   if(Q.trim()){
     const q=Q.trim().toLowerCase(),its=S.items.filter(i=>[i.name,i.note,i.ref,i.place,secOf(i.sec).t].join(' ').toLowerCase().includes(q));
@@ -1247,7 +1301,7 @@ function vPay(){
       ${!early.length&&!es.length&&!nxt.length?`<div class="empty">Nothing ${inc?'expected':'due'} in ${mName(YM)}.</div>`:''}
     </section>`;
   }
-  return top+(mbUsed?'':mb)+salaryCheck()+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items from your sheet need a quick check →</button>`:'')+chips+body+autoLogBox();
+  return top+(mbUsed?'':mb)+(rv?`<button class="banner" onclick="go('manage')">⚠️ ${rv} items need a quick check →</button>`:'')+chips+body;
 }
 
 /* ---------- screen 2: Summary ---------- */
@@ -1370,22 +1424,42 @@ function cardInsights(){
   const hot=U.filter(u=>u.limit&&u.used/u.limit>.3).length;
   return fold('sCards','💳 Card usage vs limit',hot?hot+' above 30%':'All under 30%',rows+(fees?`<div class="gh">Annual fee waiver</div>${fees}`:''),'#2f6fe0',false);
 }
-function vSummary(){
-  const a=monthNums(YM),pm=addM(YM,-1),b=pm>=START?monthNums(pm):null,t=totals(YM);
-  const cats={};spendsIn(YM).forEach(s=>cats[s.cat]=(cats[s.cat]||0)+ +s.amount);
-  return `<section class="report" id="report">
-    <div class="rh"><b>${mName(YM)}</b><button class="btn lnk w" onclick="shareReport()">Share ↗</button></div>
-    <div class="rg">
-     <button onclick="goTo('pay','in')"><span>Came in ›</span><b>${rs(a.inn)}</b>${trend(a.inn,b&&b.inn,true)}</button>
-     <button onclick="showPaid=true;goTo('pay','pay')"><span>Paid out ›</span><b>${rs(a.out)}</b>${trend(a.out,b&&b.out,false)}</button>
-     ${(()=>{const sh=shortNow();return sh&&YM===ymOf(today())?`<button class="sv" onclick="salaryBreak()"><span>${sh.left>=0?'Bank has spare':'Bank is short by'} ›</span><b>${rs(Math.abs(sh.left))}</b><em>In bank ${rs(sh.bank)} − to pay this month ${rs(sh.sum)}</em></button>`:`<button onclick="goTo('pay','pay')"><span>Still to pay ›</span><b>${rs(t.due)}</b><em>${S.cash?'':'Add In bank on To pay to see short / spare'}</em></button>`})()}
-    </div>
-    <small>Still to pay ${rs(t.due)}${t.early?' + '+rs(t.early)+' overdue from earlier':''} · same as To pay · tap any box</small>
-  </section>
-  ${thisMonth()}${masterSnap()}${monthsBox()}${loanInsights()}${cardInsights()}
-  ${fold('sTrend','📊 Last 12 months','Money in vs out',chart(),'#0f9fa8',false)}
-  ${Object.keys(cats).length?fold('sCat','🧾 Expenses by category',shortRs(Object.values(cats).reduce((a,b)=>a+b,0))+' this month',Object.entries(cats).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<div class="row"><span class="cic">${catIc(k)}</span><div class="rb"><b>${esc(k)}</b></div><div class="ra"><b>${rs(v)}</b></div></div>`).join(''),'#d29b0b',false):''}`;
+function sumMonth(){
+  const ym=YM,t=totals(ym),secs={};S.secs.forEach(x=>secs[x.k]=x);
+  const out=entries(ym).filter(x=>!isIn(x.it)&&!x.it.hold&&!x.it.xfer),G={};
+  out.forEach(x=>{const k=secs[x.it.sec]?x.it.sec:'_o';const g=G[k]=G[k]||{k,n:secs[k]?secs[k].t:'Other',plan:0,paid:0,nb:0};const v=amtE(x);g.plan+=v;if(x.paid)g.paid+=v;else if(!v)g.nb++});
+  const cash=spendsIn(ym).filter(s=>!String(s.mode).startsWith('card:')).reduce((a,s)=>a+ +s.amount,0);if(cash)G._c={k:'exp',n:'Cash / UPI expenses',plan:cash,paid:cash,nb:0};
+  const L=Object.values(G).filter(g=>g.plan>0||g.nb).sort((a,b)=>b.plan-a.plan),tot=t.paid+t.due;
+  const cemiT=S.items.filter(i=>i.inBill&&i.emiCard&&!i.hold&&(+i.amt)&&(!i.inBillFrom||ym>=i.inBillFrom)&&(loanLeft(i,ym)||0)>0).reduce((a,i)=>a+ +i.amt,0);
+  const body=`<table class="tb"><tbody>${L.map(g=>`<tr onclick="goTo('pay','${g.k==='cards'?'card':g.k==='loans'?'loan':g.k==='exp'?'exp':'bill'}')" style="cursor:pointer"><td>${esc(g.n)}<small>${g.paid?'paid '+rs(g.paid):'not paid yet'}${g.k==='cards'&&cemiT?' · incl. card EMIs '+rs(cemiT):''}${g.nb?' · '+g.nb+' with no amount yet':''}</small></td><td class="n"><b>${rs(g.plan)}</b></td></tr>`).join('')}
+    <tr><td><b>Total to pay</b><small>paid ${rs(t.paid)} · left ${rs(t.due)}</small></td><td class="n"><b>${rs(tot)}</b></td></tr></tbody></table>`;
+  return fold('sMonth','This month',`Total to pay ${rs(tot)}`,body,'',true);
 }
+function sumLoans(){
+  const ls=activeLoans();if(!ls.length)return'';
+  const own=ls.filter(i=>!i.inBill),cemi=ls.filter(i=>i.inBill);
+  const emi=own.reduce((a,i)=>a+ +i.amt,0),cemiM=cemi.filter(i=>(loanLeft(i,YM)||0)>0).reduce((a,i)=>a+(+i.amt||0),0),total=ls.reduce((a,i)=>a+toPay(i,YM),0),d=debtFree();
+  const {withR,noR}=prepayOrder(),order=[...withR,...noR],mxL=Math.max(1,...ls.map(i=>loanLeft(i,YM)||0)),all=isOpen('prepayAll',false);
+  const pr=(i,n)=>{const l=loanLeft(i,YM);return `<div class="row"><span class="cic" style="font-weight:800;font-size:15px">${n}</span><button class="rb" onclick="editItem('${i.id}')"><b>${tagH(i)}${esc(i.name)}</b><small>${i.roi?i.roi+'% · ':''}${rs(toPay(i,YM))} to pay${l!=null?' · '+l+'m left':''}</small>${l!=null?`<span class="bar" style="display:block;margin:4px 0 0"><i style="width:${Math.max(l/mxL*100,2)}%"></i></span>`:''}</button><div class="ra"><b>${+i.amt?rs(i.amt):'—'}</b></div></div>`};
+  const body=`<button class="kr" style="border-top:0"><span>EMIs this month<small>bank ${rs(emi)} + card ${rs(cemiM)}</small></span><b>${rs(emi+cemiM)}</b></button>
+   ${d?`<button class="kr"><span>Debt-free<small>last EMI · ${esc(d.last[0].name)}</small></span><b>${mName(d.last[1])} · ${(d.m/12).toFixed(1)} yrs</b></button>`:''}
+   <div class="gh">Close first if you have surplus · highest interest first</div>
+   ${order.slice(0,all?order.length:5).map((i,k)=>pr(i,+i.roi?k+1:'?')).join('')}
+   ${order.length>5?`<button class="more" onclick="togF('prepayAll',false)">${all?'Show less':'Show all '+order.length}</button>`:''}`;
+  return fold('sLoans','Loans',`${rs(total)} owed · EMIs ${rs(emi+cemiM)}/month`,body,'',false);
+}
+function sumCards(){
+  if(!S.cards.length)return'';
+  const U=usageUnits(YM);let owed=0,av=0;
+  const rows=U.map(u=>{const c0=u.cards[0],b=S.items.find(i=>i.cardId===c0.id),wait=b&&b.hold&&!b.amt,y=wait?null:cardCycle(c0),a=u.limit?Math.max(u.limit-u.used,0):null;owed+=u.used;if(a!=null)av+=a;
+    return `<tr onclick="goTo('manage',null,'mcards')" style="cursor:pointer"><td>${esc(u.name)}<small>${y?'bill '+dLabel(y.st):'after first bill'}</small></td><td class="n">${rs(u.used)}</td><td class="n" style="${a!=null&&u.limit&&a/u.limit<.3?'color:var(--red)':''}">${a==null?'—':rs(a)}</td><td class="n">${y?dLabel(y.du):'—'}</td></tr>`}).join('');
+  const body=`<div style="overflow-x:auto"><table class="tb"><thead><tr><th>Card</th><th class="n">Owed</th><th class="n">Available</th><th class="n">Pay by</th></tr></thead><tbody>${rows}</tbody></table></div><div class="hint">Owed includes new swipes and EMI blocked. Red = less than 30% available.</div>`;
+  return fold('sCards','Cards',`${rs(owed)} owed · ${rs(av)} available`,body,'',false);
+}
+function sumHistory(){const cur=ymOf(today()),L=[];for(let k=0;k<12;k++){const ym=addM(cur,-k);if(ym<START)break;const t=totals(ym);L.push({ym,tot:t.paid+t.due,paid:t.paid,inn:t.inGot})}
+  if(!L.length)return'';
+  return fold('sMonths','History','Total to pay each month',`<div style="overflow-x:auto"><table class="tb"><thead><tr><th>Month</th><th class="n">Total to pay</th><th class="n">Paid</th><th class="n">Came in</th></tr></thead><tbody>${L.map(r=>`<tr onclick="YM='${r.ym}';go('pay')" style="cursor:pointer"><td>${mName(r.ym)}</td><td class="n"><b>${rs(r.tot)}</b></td><td class="n">${rs(r.paid)}</td><td class="n">${rs(r.inn)}</td></tr>`).join('')}</tbody></table></div><div class="hint">Tap a month to open it.</div>`,'',false)}
+function vSummary(){return sumMonth()+sumLoans()+sumCards()+sumHistory()}
 function shareReport(){
   const a=monthNums(YM),pm=addM(YM,-1),b=pm>=START?monthNums(pm):null,t=totals(YM);
   const c=document.createElement('canvas');c.width=1080;c.height=1080;const x=c.getContext('2d');
@@ -1418,7 +1492,7 @@ function vManage(){
   const match=i=>!q||[i.name,i.note,i.ref,i.place].join(' ').toLowerCase().includes(q);
   const secsArr=S.secs.map(s=>{const its=S.items.filter(i=>i.sec===s.k&&match(i)),open=openSec[s.k]||!!q;
     if(q&&!its.length)return'';
-    return `<section class="card2" id="f-${s.k}" style="--c:${s.c}"><div class="mh"><button class="rb" onclick="openSec['${s.k}']=!openSec['${s.k}'];render()"><b>${esc(s.ic)} ${esc(s.t)}</b><small>${its.length} items ${open?'▴':'▾'}</small></button>
+    return `<section class="card2" id="f-${s.k}"><div class="mh"><button class="rb" onclick="openSec['${s.k}']=!openSec['${s.k}'];render()"><b>${esc(s.ic)} ${esc(s.t)}</b><small>${its.length} items ${open?'▴':'▾'}</small></button>
      <button class="tk ed" onclick="${s.type==='card'?'cardForm()':`editItem(null,'${s.k}')`}" aria-label="Add to ${esc(s.t)}">＋</button><button class="tk ed" onclick="secForm('${s.k}')" aria-label="Edit box">⋯</button></div>
      ${open?its.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc([i.sec==='ins'&&i.policyNo?'Policy '+i.policyNo:'',i.sec==='ins'&&+i.sumAssured?'Cover '+shortRs(i.sumAssured):'',+i.amt?rs(i.amt):'Varies',i.freq==='once'?dLabel(i.date||today()):i.freq==='months'?(i.months||[]).map(m=>MN[m-1]).join(', '):ord(i.day)+' monthly',i.hold?"Don't pay":''].filter(Boolean).join(' · '))}</small></button>
        <button class="tk ed" onclick="editItem('${i.id}')" aria-label="Edit ${esc(i.name)}">✏️</button><button class="tk ed" onclick="delItem('${i.id}')" aria-label="Delete ${esc(i.name)}">🗑</button></div>`).join('')||'<div class="empty">No items yet.</div>':''}
@@ -1434,11 +1508,11 @@ function vManage(){
   ${q&&!cards.length?'':(()=>{const body=cards.map(c=>{const b=S.items.find(i=>i.cardId===c.id),bl=b?[b.hold?"Don't pay":(+b.amt?'Bill '+rs(b.amt):'Bill varies'),b.mode?'usually via '+modeName(b.mode):''].filter(Boolean).join(' · '):'No bill reminder';
       return `<div class="row"><button class="rb" onclick="cardForm('${c.id}')"><b>${esc(c.name)}${c.last4?' ••'+esc(c.last4):''}</b><small>Bill ${ord(c.stmt)} · pay by ${ord(c.due)}${c.pool?' · '+esc(c.pool)+' pool '+shortRs((pools().find(p=>p.name===c.pool)||{}).limit):+c.limit?' · limit '+shortRs(c.limit):''}</small><small>${esc(bl)}</small>${+c.stmtAvail?`<small>Bank says available ${shortRs(c.stmtAvail)} (statement ${dLabel(c.stmtAvailAsOf)})</small>`:''}${emiBlocked(c)?`<small>EMI blocked ${shortRs(emiBlocked(c))}${emiApprox(c)?' (approx)':''} · ${emiItems(c).length} EMI${emiItems(c).length>1?'s':''}</small>`:''}</button>${b?`<button class="tk ed" onclick="editItem('${b.id}')" aria-label="Bill settings for ${esc(c.name)}">🧾</button>`:''}<button class="tk ed" onclick="cardForm('${c.id}')" aria-label="Edit card">✏️</button><button class="tk ed" onclick="delCard('${c.id}')" aria-label="Delete card">🗑</button></div>`}).join('')
       +(extraBills.length?'<div class="cl">Other card payments</div>'+extraBills.map(i=>`<div class="row"><button class="rb" onclick="editItem('${i.id}')"><b>${esc(i.name)}</b><small>${esc((+i.amt?rs(i.amt):'Varies')+' · '+ord(i.day)+' monthly')}</small></button><button class="tk ed" onclick="editItem('${i.id}')" aria-label="Edit">✏️</button><button class="tk ed" onclick="delItem('${i.id}')" aria-label="Delete">🗑</button></div>`).join(''):'');
-     return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards · bills &amp; billing cycle',cycleTable()+'<div class="cl">Your cards</div>'+body,'#1a63e8',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
+     return q?`<section class="card2" style="--c:#1a63e8"><div class="mh"><div class="rb"><b>💳 Credit cards</b></div></div>${body}</section>`:fold('mcards','💳 Credit cards',S.cards.length+' cards',body,'',false,`<button class="tk ed" onclick="cardForm()" aria-label="Add card">＋</button>`)})()}
   ${secs}
-  ${q?'':activityBox()}
-  ${q?'':`<button class="btn wide" onclick="secForm()">＋ New box</button>
-  ${fold('mset','⚙️ Settings','Alerts, PIN, modes, email reader',`<div class="setg">
+  ${q?'':autoLogBox()}${q?'':activityBox()}
+  ${q?'':`<button class="more" onclick="secForm()">＋ New group</button>
+  ${fold('mset','⚙️ Settings','PIN, alerts, email reader, bank balance',`<div class="setg">
    <button onclick="remindForm()">🔔 Alerts<small>${(S.remind??1)?(S.remind??1)+' day before':'On the due day'}</small></button>
    <button onclick="changePin()">🔒 Change PIN<small>6 digits</small></button>
    <button onclick="installApp()">📲 Install app<small>Home screen icon</small></button>
@@ -1451,7 +1525,7 @@ function vManage(){
    <button onclick="toggleSet('autoMail')">🔄 Auto-mark paid<small>${S.autoMail===false?'Off · ask me first':'On · from bank emails'}</small></button>
    <button onclick="cashForm()">🏦 Money in bank<small>${S.cash?rs(S.cash.amt):'Not set'}</small></button>
   </div>`,'#64748b',false)}
-  ${fold('mdata','💾 Data','Backup, restore, export',`<div class="setg">
+  ${fold('mdata','💾 Backup & export','Backup, restore, Excel',`<div class="setg">
    <button onclick="exportJSON()">⬇️ Back up<small>Download a copy</small></button>
    <button onclick="$('#imp').click()">⬆️ Restore<small>From a backup</small></button>
    <button onclick="exportXLSX()">📊 Export to Excel<small>Full history · 9 sheets</small></button>
