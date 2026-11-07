@@ -747,6 +747,9 @@ function runFixes20(){
   if(done.length)logA('App','New card EMIs added ('+done.length+')',done.join(' · '));
   S.fixes.f20=true;return true;
 }
+function runFixes21(){S.fixes=S.fixes||{};if(S.fixes.f21)return false;
+  S.items.forEach(i=>{if(/· SmartEMI (24m|12m)$/.test(i.name||'')&&i.inBillFrom==='2026-12'&&!i.conv)i.conv=/Paytm/.test(i.name)?'2026-11-06':'2026-11-07';if(/· EMI 1\.5L \(18m\)$/.test(i.name||'')&&!i.conv)i.conv='2026-11-07'});
+  S.fixes.f21=true;return true}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -772,7 +775,7 @@ function isNameless(d){d=String(d||'').trim();if(!d)return true;
   if(!/\s/.test(d)&&/^[a-z]{1,4}$/.test(d))return true;
   return false}
 const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15,runFixes16,runFixes17,runFixes18,runFixes19,runFixes20].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15,runFixes16,runFixes17,runFixes18,runFixes19,runFixes20,runFixes21].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -796,7 +799,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15(),fx16=runFixes16(),fx17=runFixes17(),fx18=runFixes18(),fx19=runFixes19(),fx20=runFixes20();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15||fx16||fx17||fx18||fx19||fx20){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15(),fx16=runFixes16(),fx17=runFixes17(),fx18=runFixes18(),fx19=runFixes19(),fx20=runFixes20(),fx21=runFixes21();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15||fx16||fx17||fx18||fx19||fx20||fx21){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -1081,7 +1084,7 @@ function findIns(m){
 const FREQ_MONTHS=(f,mo)=>{f=String(f||'').toLowerCase();if(/month/.test(f))return null;if(/quarter/.test(f))return[0,3,6,9].map(k=>((mo-1+k)%12)+1).sort((a,b)=>a-b);if(/half/.test(f))return[mo,((mo+5)%12)+1].sort((a,b)=>a-b);return[mo]};
 function payerItem(m){S.payers=S.payers||{};const id=S.payers[String(m.payer||'').toLowerCase()];return id?S.items.find(i=>i.id===id):null}
 function mailText(m){
-  if(m.kind==='cardemi'){const f=findCard(m.bank,m.last4),ex=S.items.find(i=>i.src===m.id||(i.srcs||[]).includes(m.id));
+  if(m.kind==='cardemi'){const f=findCard(m.bank,m.last4),ex=S.items.find(i=>i.src===m.id||(i.srcs||[]).includes(m.id))||(f&&S.items.find(i=>i.conv&&i.emiCard===f.c.id&&Math.abs(new Date(i.conv)-new Date(m.date))<=7*864e5));
     return{t:`Card EMI: ${f?f.c.name:m.bank}${m.last4?' ••'+m.last4:''} · ${rs(m.amt)}`,s:`Converted ${dLabel(m.date)} ${m.date.slice(0,4)}${f?'':' · card not in your list'}`,ok:!!f&&!ex,dup:!!ex,f:f||null,ce:f}}
   if(m.kind==='income'){const it=payerItem(m),e=it&&occurs(it,ymOf(m.date))?entry(it,ymOf(m.date)):null;
     return{t:it?`${it.name} received ${rs(m.amt)}`:`${rs(m.amt)} from ${m.payer}`,s:`${dLabel(m.date)} · via ${m.via||'bank'}${m.cur&&m.cur!=='INR'?' · '+m.cur:''}${it?'':' · tap Assign to choose the income'}`,ok:!!e,dup:!!(e&&e.paid&&near(e.amt,m.amt)),f:it?{}:null,inc:e,assign:!it}}
