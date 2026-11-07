@@ -730,6 +730,23 @@ function runFixes19(){
   const M={income:'#c9a20a',cards:'#2f6fe0',loans:'#ea7a1f',home:'#db5b9a',bills:'#0f9fa8',xfer:'#0891b2',edu:'#6366f1',ins:'#a855f7',save:'#1f9d55'};
   S.secs.forEach(x=>{if(M[x.k])x.c=M[x.k]});S.fixes.f19=true;return true;
 }
+function runFixes20(){
+  S.fixes=S.fixes||{};if(S.fixes.f20)return false;
+  const ls=(S.secs.find(x=>x.type==='loan')||{}).k||'loans',done=[];
+  const fc=(l4,rx)=>S.cards.find(c=>c.last4===l4)||S.cards.find(c=>rx.test(c.name));
+  const L=[
+   ['2375',/paytm/i,'HDFC Paytm ••2375 · SmartEMI 24m',15207,24,23.52,288932,'2026-12',{},'Converted 6 Nov 2026 · total payable ₹3,64,966 · first EMI in Dec bill'],
+   ['4114',/rupay.*upi|upi.*rupay/i,'HDFC Rupay UPI ••4114 · SmartEMI 24m',10421,24,23.52,197998,'2026-12',{},'Converted 7 Nov 2026 · total payable ₹2,50,093 · first EMI in Dec bill'],
+   ['4114',/rupay.*upi|upi.*rupay/i,'HDFC Rupay UPI ••4114 · SmartEMI 12m',9356,12,23.88,99004,'2026-12',{},'Converted 7 Nov 2026 · total payable ₹1,12,268 · first EMI in Dec bill'],
+   ['0479',/regalia/i,'HDFC Regalia ••0479 · SmartEMI 24m',7414,24,15.72,151835,'2026-12',{},'Converted 7 Nov 2026 · total payable ₹1,77,927 · first EMI in Dec bill'],
+   ['3000',/amazon/i,'ICICI Amazon ••3000 · EMI 1.5L (18m)',9570.87,18,18,150000,'2026-11',{blockMode:'emiLeft',approx:true,ok:false},'Converted Nov 2026 · EMI worked out from 18% / 18 months — confirm EMI and first EMI month from the ICICI app'],
+   ['5008',/icici.*rupay/i,'ICICI Rupay ••5008 · EMI 1.5L (18m)',9570.87,18,18,150000,'2026-11',{blockMode:'emiLeft',approx:true,ok:false},'Converted Nov 2026 · EMI worked out from 18% / 18 months — confirm EMI and first EMI month from the ICICI app']];
+  L.forEach(([l4,rx,name,amt,left,roi,pr,from,ex,note])=>{const c=fc(l4,rx);if(!c||S.items.some(i=>i.name===name))return;
+    S.items.push(Object.assign({id:uid(),sec:ls,name,amt,left,roi,loanAmt:pr,principalLeft:ex.blockMode?undefined:pr,plAsOf:from+'-01',asOf:from,start:from,inBillFrom:from,freq:'monthly',day:c.due||1,
+      inBill:true,emiCard:c.id,mode:'card:'+c.id,closing:addM(from,left-1),ok:true,note},ex));done.push(name)});
+  if(done.length)logA('App','New card EMIs added ('+done.length+')',done.join(' · '));
+  S.fixes.f20=true;return true;
+}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
   const ar=S.cards.find(c=>c.last4==='2152');
@@ -755,7 +772,7 @@ function isNameless(d){d=String(d||'').trim();if(!d)return true;
   if(!/\s/.test(d)&&/^[a-z]{1,4}$/.test(d))return true;
   return false}
 const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15,runFixes16,runFixes17,runFixes18,runFixes19].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15,runFixes16,runFixes17,runFixes18,runFixes19,runFixes20].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -779,7 +796,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15(),fx16=runFixes16(),fx17=runFixes17(),fx18=runFixes18(),fx19=runFixes19();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15||fx16||fx17||fx18||fx19){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15(),fx16=runFixes16(),fx17=runFixes17(),fx18=runFixes18(),fx19=runFixes19(),fx20=runFixes20();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15||fx16||fx17||fx18||fx19||fx20){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -1435,14 +1452,21 @@ function sumMonth(){
     <tr><td><b>Total to pay</b><small>paid ${rs(t.paid)} · left ${rs(t.due)}</small></td><td class="n"><b>${rs(tot)}</b></td></tr></tbody></table>`;
   return fold('sMonth','This month',`Total to pay ${rs(tot)}`,body,'',true);
 }
+function emiPath(){const L=S.items.filter(i=>tOf(i)==='loan'&&!i.hold&&+i.amt),cur=ymOf(today());
+  const emiIn=(i,ym)=>{if(i.inBill){if(i.inBillFrom&&ym<i.inBillFrom)return 0;return (loanLeft(i,ym)||0)>0?+i.amt:0}return occurs(i,ym)&&(loanLeft(i,ym)==null||loanLeft(i,ym)>0)?+i.amt:0};
+  const tot=ym=>L.reduce((a,i)=>a+emiIn(i,ym),0),out=[];let prev=tot(cur);out.push({ym:cur,t:prev,ended:[]});
+  for(let k=1;k<=48;k++){const ym=addM(cur,k),t=tot(ym);if(Math.round(t)!==Math.round(prev)){const pm=addM(ym,-1);out.push({ym,t,ended:L.filter(i=>emiIn(i,pm)&&!emiIn(i,ym)).map(i=>i.name),started:L.filter(i=>!emiIn(i,pm)&&emiIn(i,ym)).map(i=>i.name)})}prev=t}
+  return out}
 function sumLoans(){
   const ls=activeLoans();if(!ls.length)return'';
   const own=ls.filter(i=>!i.inBill),cemi=ls.filter(i=>i.inBill);
-  const emi=own.reduce((a,i)=>a+ +i.amt,0),cemiM=cemi.filter(i=>(loanLeft(i,YM)||0)>0).reduce((a,i)=>a+(+i.amt||0),0),total=ls.reduce((a,i)=>a+toPay(i,YM),0),d=debtFree();
+  const emi=own.reduce((a,i)=>a+ +i.amt,0),cemiM=cemi.filter(i=>(!i.inBillFrom||YM>=i.inBillFrom)&&(loanLeft(i,YM)||0)>0).reduce((a,i)=>a+(+i.amt||0),0),total=ls.reduce((a,i)=>a+toPay(i,YM),0),d=debtFree();
   const {withR,noR}=prepayOrder(),order=[...withR,...noR],mxL=Math.max(1,...ls.map(i=>loanLeft(i,YM)||0)),all=isOpen('prepayAll',false);
   const pr=(i,n)=>{const l=loanLeft(i,YM);return `<div class="row"><span class="cic" style="font-weight:800;font-size:15px">${n}</span><button class="rb" onclick="editItem('${i.id}')"><b>${tagH(i)}${esc(i.name)}</b><small>${i.roi?i.roi+'% · ':''}${rs(toPay(i,YM))} to pay${l!=null?' · '+l+'m left':''}</small>${l!=null?`<span class="bar" style="display:block;margin:4px 0 0"><i style="width:${Math.max(l/mxL*100,2)}%"></i></span>`:''}</button><div class="ra"><b>${+i.amt?rs(i.amt):'—'}</b></div></div>`};
   const body=`<button class="kr" style="border-top:0"><span>EMIs this month<small>bank ${rs(emi)} + card ${rs(cemiM)}</small></span><b>${rs(emi+cemiM)}</b></button>
    ${d?`<button class="kr"><span>Debt-free<small>last EMI · ${esc(d.last[0].name)}</small></span><b>${mName(d.last[1])} · ${(d.m/12).toFixed(1)} yrs</b></button>`:''}
+   ${(()=>{const P=emiPath();if(P.length<2)return'';const all2=isOpen('emiPath',false),rows=P.slice(1,all2?P.length:6);
+     return `<div class="gh">EMIs going down · no new loans assumed</div><table class="tb"><tbody>${rows.map(r=>`<tr><td>From ${mName(r.ym)}<small>${r.ended.length?esc(r.ended.join(', '))+' end'+(r.ended.length>1?'':'s'):''}${r.started&&r.started.length?(r.ended.length?' · ':'')+r.started.length+' new EMI'+(r.started.length>1?'s':'')+' start':''}</small></td><td class="n"><b>${rs(r.t)}</b><small>${r.t<P[0].t?'−'+rs(P[0].t-r.t):'+'+rs(r.t-P[0].t)} vs this month</small></td></tr>`).join('')}</tbody></table>${P.length>6?`<button class="more" onclick="togF('emiPath',false)">${all2?'Show less':'Show all '+(P.length-1)}</button>`:''}`})()}
    <div class="gh">Close first if you have surplus · highest interest first</div>
    ${order.slice(0,all?order.length:5).map((i,k)=>pr(i,+i.roi?k+1:'?')).join('')}
    ${order.length>5?`<button class="more" onclick="togF('prepayAll',false)">${all?'Show less':'Show all '+order.length}</button>`:''}`;
