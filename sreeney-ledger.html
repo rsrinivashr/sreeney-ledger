@@ -296,10 +296,11 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#b42335}.report .rg
 .tb small{display:block;color:var(--muted);font-size:11.5px}
 .mst{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 10px}.mst div{border:1px solid var(--border);border-radius:12px;padding:10px 12px}
 .mst span{display:block;font-size:12px;color:var(--muted);font-weight:600}.mst b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.mst1{grid-template-columns:1fr}.mst3{grid-template-columns:repeat(3,1fr);margin:6px 0 8px}.mst3 b{font-size:15.5px}.mst3 small{display:block;font-size:11px;color:var(--muted)}
 .msg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.msc{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px}.msg .msc{margin-bottom:0}
 .msh{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 .ms2 td{padding:6px 2px}.ms2 tr.t td{font-weight:800;border-bottom:0}.ms2 tr:last-child td{border-bottom:0}
-@media(max-width:760px){.mst{grid-template-columns:1fr 1fr}.msg{grid-template-columns:1fr}.mst b{font-size:16px}}
+@media(max-width:760px){.mst{grid-template-columns:1fr 1fr}.mst1{grid-template-columns:1fr}.mst3{grid-template-columns:1fr}.msg{grid-template-columns:1fr}.mst b{font-size:16px}}
 .srch{flex:none;height:36px;width:40px;border-radius:18px;border:1px solid var(--border);background:var(--panel)}
 
 /* login (navy) */
@@ -1512,14 +1513,10 @@ function sumSnapshot(){
   const P=emiPath(),drops=P.filter((r,k)=>k>0&&r.t<P[k-1].t).slice(0,2);
   const top=D.filter(i=>+i.roi>0).map(i=>({i,c:loanCalc(i,cur)})).filter(o=>o.c.n>0).sort((a,b)=>b.i.roi-a.i.roi).slice(0,3);
   const tr=(a,b,sm,bold)=>`<tr${bold?' class="t"':''}><td>${a}${sm?` <small style="display:inline">${sm}</small>`:''}</td><td class="n">${b}</td></tr>`;
-  const card=(h,rows)=>`<div class="msc"><div class="msh">${h}</div><table class="tb ms2"><tbody>${rows}</tbody></table></div>`;
-  const body=`<div class="mst">
-    <div><span>Principal left (all loans)</span><b>${rs(pv)}</b></div>
-    <div><span>Interest still to pay</span><b>${rs(int)}</b></div>
-    <div><span>Total to repay</span><b>${rs(pv+int)}</b></div>
-    <div><span>Mandatory · ${mName(cur)}</span><b>${rs(need)}</b></div></div>
+  const card=(h,rows,pre)=>`<div class="msc"><div class="msh">${h}</div>${pre||''}<table class="tb ms2"><tbody>${rows}</tbody></table></div>`;
+  const body=`
    <div class="msg">
-    ${card('Loans · principal left',order.filter(k=>G[k]).map(k=>tr(k,rs(G[k].pv))).join('')+tr('Principal left'+`<small>interest still to pay ${rs(int)} (≈${pv?Math.round(int/pv*100):0}%)</small>`,rs(pv),'',1))}
+    ${card('Loans',order.filter(k=>G[k]).map(k=>tr(k,rs(G[k].pv))).join(''),`<div class="mst mst3"><div><span>Principal left</span><b>${rs(pv)}</b></div><div><span>Interest still to pay</span><b>${rs(int)}</b><small>≈${pv?Math.round(int/pv*100):0}% on top</small></div><div><span>Total to repay</span><b>${rs(pv+int)}</b></div></div><div class="msh" style="margin-top:6px">Principal left by type</div>`)}
     ${card('Mandatory · '+mName(cur),tr('Bank & other loan EMIs',rs(bankE))+tr('Card EMIs',rs(cardE),'(inside card bills)')+nd.map(i=>tr(esc(i.name),rs(i.amt),loanEnd(i)?'· ends '+mName(loanEnd(i)):'')).join('')+tr('Home expenses',rs(home))+tr('Utilities + SIP/RD',rs(util))+tr('Insurance due this month',rs(insM))+(bor?tr('Borrowing cost',rs(bor),'· 3% on gap'):'')+tr('Total this month',rs(need),'',1))}
     ${card('Fees & insurance (when due)',(edu.length?edu.map(x=>tr(esc(x.it.name),rs(amtE(x)),dLabel(x.date))).join(''):tr('Education this month','—'))+tr('Insurance due this month',rs(insM))+tr('Insurance · next 12 months',rs(insY)))}
     ${card('Income vs need',tr('Income this month',rs(inc))+tr('Mandatory this month',rs(need))+tr(gap>=0?'Spare this month':'Monthly gap',(gap<0?'− ':'')+rs(Math.abs(gap)),'',1)+drops.map(r=>tr('EMIs drop to',rs(r.t),'· '+mName(r.ym))).join(''))}
