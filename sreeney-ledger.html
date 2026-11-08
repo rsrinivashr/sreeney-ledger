@@ -294,6 +294,12 @@ em.bd{color:var(--red);font-style:normal}.report em.bd{color:#b42335}.report .rg
 .tb{width:100%;border-collapse:collapse;font-size:13.5px}.tb th{text-align:left;font-size:11.5px;font-weight:700;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--border)}
 .tb td{padding:8px 4px;border-bottom:1px solid var(--border);vertical-align:top}.tb td.n,.tb th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tb small{display:block;color:var(--muted);font-size:11.5px}
+.mst{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 10px}.mst div{border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.mst span{display:block;font-size:12px;color:var(--muted);font-weight:600}.mst b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.msg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.msc{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px}.msg .msc{margin-bottom:0}
+.msh{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.ms2 td{padding:6px 2px}.ms2 tr.t td{font-weight:800;border-bottom:0}.ms2 tr:last-child td{border-bottom:0}
+@media(max-width:760px){.mst{grid-template-columns:1fr 1fr}.msg{grid-template-columns:1fr}.mst b{font-size:16px}}
 .srch{flex:none;height:36px;width:40px;border-radius:18px;border:1px solid var(--border);background:var(--panel)}
 
 /* login (navy) */
@@ -1489,31 +1495,38 @@ function sumHistory(){const cur=ymOf(today()),L=[];for(let k=0;k<12;k++){const y
   return fold('sMonths','History','Total to pay each month',`<div style="overflow-x:auto"><table class="tb"><thead><tr><th>Month</th><th class="n">Total to pay</th><th class="n">Paid</th><th class="n">Came in</th></tr></thead><tbody>${L.map(r=>`<tr onclick="YM='${r.ym}';go('pay')" style="cursor:pointer"><td>${mName(r.ym)}</td><td class="n"><b>${rs(r.tot)}</b></td><td class="n">${rs(r.paid)}</td><td class="n">${rs(r.inn)}</td></tr>`).join('')}</tbody></table></div><div class="hint">Tap a month to open it.</div>`,'',false)}
 function loanCalc(i,ym){const from=i.inBillFrom&&i.inBillFrom>ym?i.inBillFrom:ym,n=loanLeft(i,from)||0,e=+i.amt||0,r=(+i.roi||0)/1200;
   const pv=n<=0?0:r?e*(1-Math.pow(1+r,-n))/r:(+i.principalLeft?plNow(i,from):e*n);return{n,e,pv,pay:e*n,int:Math.max(e*n-pv,0)}}
+function emiInM(i,ym){if(i.inBill){if(i.inBillFrom&&ym<i.inBillFrom)return 0;return (loanLeft(i,ym)||0)>0?+i.amt:0}return occurs(i,ym)&&(loanLeft(i,ym)==null||loanLeft(i,ym)>0)?+i.amt:0}
 function sumSnapshot(){
   const cur=ymOf(today()),L=S.items.filter(i=>tOf(i)==='loan'&&!i.hold&&+i.amt),D=L.filter(i=>!i.noDebt);
-  let pv=0,int=0;D.forEach(i=>{const c=loanCalc(i,cur);pv+=c.pv;int+=c.int});
-  const P=emiPath(),emi=P.length?P[0].t:0,es=entries(cur),secT=k=>es.filter(x=>x.it.sec===k&&!x.it.hold).reduce((a,x)=>a+amtE(x),0);
-  const home=['home','bills','save'].reduce((a,k)=>a+secT(k),0);
+  const grp=i=>i.inBill?(/loan on card/i.test(i.name)?'Loans on card':'Card EMIs'):/insurance/i.test(i.name)?'Loan insurances':/car|kia/i.test(i.name)?'Car loan':/cred|poonawalla/i.test(i.name)?'CRED + Poonawalla':/hdfc/i.test(i.name)?'HDFC home + top-ups + Jumbo':'Other loans';
+  const G={};let pv=0,int=0;D.forEach(i=>{const c=loanCalc(i,cur);if(c.n<=0)return;const g=G[grp(i)]=G[grp(i)]||{n:0,pv:0};g.n++;g.pv+=c.pv;pv+=c.pv;int+=c.int});
+  const order=['HDFC home + top-ups + Jumbo','Car loan','CRED + Poonawalla','Loan insurances','Loans on card','Card EMIs','Other loans'];
+  const es=entries(cur),secT=k=>es.filter(x=>x.it.sec===k&&!x.it.hold).reduce((a,x)=>a+amtE(x),0);
+  const bankE=L.filter(i=>!i.inBill&&!i.noDebt).reduce((a,i)=>a+emiInM(i,cur),0),cardE=L.filter(i=>i.inBill).reduce((a,i)=>a+emiInM(i,cur),0);
+  const nd=L.filter(i=>i.noDebt&&emiInM(i,cur));
+  const home=secT('home'),util=secT('bills')+secT('save'),insM=secT('ins'),edu=es.filter(x=>x.it.sec==='edu'&&!x.it.hold);
+  const base=bankE+cardE+nd.reduce((a,i)=>a+ +i.amt,0)+home+util+insM;
+  const incPlan=es.filter(x=>isIn(x.it)&&!x.it.hold).reduce((a,x)=>a+(x.amt||lastAmt(x.it,x.ym)||0),0),inc=Math.max(incPlan,totals(cur).inGot);
+  const bor=base>inc?Math.round((base-inc)*0.03):0,need=base+bor,gap=inc-need;
   let insY=0;for(let k=0;k<12;k++)insY+=entries(addM(cur,k),'ins').filter(x=>!x.it.hold).reduce((a,x)=>a+amtE(x),0);
-  const insAvg=Math.round(insY/12),need=emi+home+insAvg;
-  const incPlan=es.filter(x=>isIn(x.it)&&!x.it.hold).reduce((a,x)=>a+(x.amt||lastAmt(x.it,x.ym)||0),0),inc=Math.max(incPlan,totals(cur).inGot),gap=inc-need;
-  const edu=secT('edu'),insM=secT('ins');
+  const P=emiPath(),drops=P.filter((r,k)=>k>0&&r.t<P[k-1].t).slice(0,2);
   const top=D.filter(i=>+i.roi>0).map(i=>({i,c:loanCalc(i,cur)})).filter(o=>o.c.n>0).sort((a,b)=>b.i.roi-a.i.roi).slice(0,3);
-  const drop=P.find((r,k)=>k>0&&r.t<P[k-1].t);
-  const tr=(a,b,sm,st)=>`<tr><td>${a}${sm?`<small>${sm}</small>`:''}</td><td class="n"${st?` style="${st}"`:''}><b>${b}</b></td></tr>`;
-  const body=`<table class="tb"><tbody>
-   ${tr('Principal left','₹'+Math.round(pv).toLocaleString('en-IN'),'all loans + card EMIs (chit & Baleno not counted)')}
-   ${tr('Interest still to pay','₹'+Math.round(int).toLocaleString('en-IN'),'the "leakage" · '+(pv?Math.round(int/pv*100):0)+'% on top of principal','color:var(--red)')}
-   ${tr('Total to repay',rs(pv+int))}
-   ${tr('Mandatory this month',rs(need),'EMIs '+rs(emi)+' + home/bills/SIP '+rs(home)+' + insurance avg '+rs(insAvg))}
-   ${tr('Income this month',rs(inc),'expected')}
-   ${tr(gap>=0?'Spare each month':'Monthly gap',rs(Math.abs(gap)),gap>=0?'':'income minus mandatory',gap>=0?'color:var(--green)':'color:var(--red)')}
-   ${edu||insM?tr('Fees & insurance due this month',rs(edu+insM),(edu?'education '+rs(edu):'')+(edu&&insM?' · ':'')+(insM?'insurance '+rs(insM):'')):''}
-   ${drop?tr('Next EMI drop',rs(drop.t)+'/mo','from '+mName(drop.ym)+(drop.ended.length?' · '+esc(drop.ended.slice(0,2).join(', '))+(drop.ended.length>2?' +'+(drop.ended.length-2):'')+' end':'')):''}
-  </tbody></table>
-  ${top.length?`<div class="gh">Close first · highest rate</div><table class="tb"><tbody>${top.map((o,k)=>{const fee=o.i.inBill?o.c.pv*0.0354:0,save=Math.max(o.c.int-fee,0);return tr((k+1)+'. '+esc(o.i.name),o.i.roi+'%','owe '+rs(o.c.pv)+' · closing now saves ≈ '+rs(save)+(fee?' after 3% fee':''))}).join('')}</tbody></table>`:''}
-  <div class="hint">Refreshes by itself every month as EMIs and bills are paid. Card swipes are extra.</div>`;
-  return fold('sMoney','Money snapshot',`Owe ${rs(pv)} · interest ${rs(int)} · ${gap>=0?'spare':'gap'} ${rs(Math.abs(gap))}/month`,body,'',false);
+  const tr=(a,b,sm,bold)=>`<tr${bold?' class="t"':''}><td>${a}${sm?` <small style="display:inline">${sm}</small>`:''}</td><td class="n">${b}</td></tr>`;
+  const card=(h,rows)=>`<div class="msc"><div class="msh">${h}</div><table class="tb ms2"><tbody>${rows}</tbody></table></div>`;
+  const body=`<div class="mst">
+    <div><span>Principal left (all loans)</span><b>${rs(pv)}</b></div>
+    <div><span>Interest still to pay</span><b>${rs(int)}</b></div>
+    <div><span>Total to repay</span><b>${rs(pv+int)}</b></div>
+    <div><span>Mandatory · ${mName(cur)}</span><b>${rs(need)}</b></div></div>
+   <div class="msg">
+    ${card('Loans · principal left',order.filter(k=>G[k]).map(k=>tr(k,rs(G[k].pv))).join('')+tr('Principal left'+`<small>interest still to pay ${rs(int)} (≈${pv?Math.round(int/pv*100):0}%)</small>`,rs(pv),'',1))}
+    ${card('Mandatory · '+mName(cur),tr('Bank & other loan EMIs',rs(bankE))+tr('Card EMIs',rs(cardE),'(inside card bills)')+nd.map(i=>tr(esc(i.name),rs(i.amt),loanEnd(i)?'· ends '+mName(loanEnd(i)):'')).join('')+tr('Home expenses',rs(home))+tr('Utilities + SIP/RD',rs(util))+tr('Insurance due this month',rs(insM))+(bor?tr('Borrowing cost',rs(bor),'· 3% on gap'):'')+tr('Total this month',rs(need),'',1))}
+    ${card('Fees & insurance (when due)',(edu.length?edu.map(x=>tr(esc(x.it.name),rs(amtE(x)),dLabel(x.date))).join(''):tr('Education this month','—'))+tr('Insurance due this month',rs(insM))+tr('Insurance · next 12 months',rs(insY)))}
+    ${card('Income vs need',tr('Income this month',rs(inc))+tr('Mandatory this month',rs(need))+tr(gap>=0?'Spare this month':'Monthly gap',(gap<0?'− ':'')+rs(Math.abs(gap)),'',1)+drops.map(r=>tr('EMIs drop to',rs(r.t),'· '+mName(r.ym))).join(''))}
+   </div>
+   ${top.length?card('Close first · highest rate',top.map((o,k)=>{const fee=o.i.inBill?o.c.pv*0.0354:0;return tr((k+1)+'. '+esc(o.i.name)+` <small style="display:block">owe ${rs(o.c.pv)} · closing now saves ≈ ${rs(Math.max(o.c.int-fee,0))}${fee?' after 3% fee':''}</small>`,o.i.roi+'%')}).join('')):''}
+   <div class="hint">Refreshes by itself every month. Education fees are not in the monthly total. Card swipes are extra.</div>`;
+  return fold('sMoney','Money snapshot',`Owe ${rs(pv)} · ${mName(cur)} needs ${rs(need)}`,body,'',false);
 }
 function vSummary(){return sumMonth()+sumLoans()+sumCards()+sumHistory()+sumSnapshot()}
 function shareReport(){
