@@ -757,6 +757,7 @@ function runFixes20(){
 function runFixes21(){S.fixes=S.fixes||{};if(S.fixes.f21)return false;
   S.items.forEach(i=>{if(/· SmartEMI (24m|12m)$/.test(i.name||'')&&i.inBillFrom==='2026-12'&&!i.conv)i.conv=/Paytm/.test(i.name)?'2026-11-06':'2026-11-07';if(/· EMI 1\.5L \(18m\)$/.test(i.name||'')&&!i.conv)i.conv='2026-11-07'});
   S.fixes.f21=true;return true}
+function runFixes23(){S.fixes=S.fixes||{};if(S.fixes.f23)return false;const a=S.items.find(i=>/anwar.*alla/i.test(i.name||''));if(a&&!(+a.amt)){a.amt=30000;a.note=(a.note?a.note+' · ':'')+'Comes every month, date not fixed (sometimes more)'}S.mfix=S.mfix||{power:2000,gas:750};S.fixes.f23=true;return true}
 function runFixes22(){S.fixes=S.fixes||{};if(S.fixes.f22)return false;S.items.forEach(i=>{if(/kapil|chit|baleno/i.test(i.name||'')&&tOf(i)==='loan')i.noDebt=true});S.fixes.f22=true;return true}
 function runFixes2(){
   S.fixes=S.fixes||{};if(S.fixes.f2)return false;
@@ -783,7 +784,7 @@ function isNameless(d){d=String(d||'').trim();if(!d)return true;
   if(!/\s/.test(d)&&/^[a-z]{1,4}$/.test(d))return true;
   return false}
 const cleanMerchant=m=>String(m||'').replace(/^(upi|pos|ecom|php\*?|rel\*)\s*/i,'').replace(/\s{2,}/g,' ').trim();
-let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15,runFixes16,runFixes17,runFixes18,runFixes19,runFixes20,runFixes21,runFixes22].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
+let S=load();normPin();if([runFixes,runFixes2,runFixes3,runFixes4,runFixes5,runFixes6,runFixes7,runFixes8,runFixes9,runFixes10,runFixes11,runFixes12,runFixes13,runFixes14,runFixes15,runFixes16,runFixes17,runFixes18,runFixes19,runFixes20,runFixes21,runFixes22,runFixes23].map(f=>f()).some(Boolean))logA('App','One-time data corrections applied');
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(DB){clearTimeout(syncT);setSync('busy','Syncing');syncT=setTimeout(push,700)}}
 
@@ -807,7 +808,7 @@ async function push(){
 function applyRemote(m){
   const rest=JSON.parse(m.v2main),spends=[];
   Object.keys(m).filter(k=>k.startsWith('v2sp-')).forEach(k=>spends.push(...JSON.parse(m[k])));
-  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15(),fx16=runFixes16(),fx17=runFixes17(),fx18=runFixes18(),fx19=runFixes19(),fx20=runFixes20(),fx21=runFixes21(),fx22=runFixes22();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15||fx16||fx17||fx18||fx19||fx20||fx21||fx22){logA('App','One-time data corrections applied');save()}else saveLocal();
+  S=Object.assign(blank(),rest,{spends,notified:S.notified||{}});normPin();const fx1=runFixes(),fx2=runFixes2(),fx3=runFixes3(),fx4=runFixes4(),fx5=runFixes5(),fx6=runFixes6(),fx7=runFixes7(),fx8=runFixes8(),fx9=runFixes9(),fx10=runFixes10(),fx11=runFixes11(),fx12=runFixes12(),fx13=runFixes13(),fx14=runFixes14(),fx15=runFixes15(),fx16=runFixes16(),fx17=runFixes17(),fx18=runFixes18(),fx19=runFixes19(),fx20=runFixes20(),fx21=runFixes21(),fx22=runFixes22(),fx23=runFixes23();if(fx1||fx2||fx3||fx4||fx5||fx6||fx7||fx8||fx9||fx10||fx11||fx12||fx13||fx14||fx15||fx16||fx17||fx18||fx19||fx20||fx21||fx22||fx23){logA('App','One-time data corrections applied');save()}else saveLocal();
   if(!$('#lock').classList.contains('hide')){if(pinStage==='enter'){pinBuf='';pinUI()}}else render();
 }
 /* ---------- Firebase (Google sign-in + Firestore) ---------- */
@@ -1175,7 +1176,11 @@ function mailApply(id,quiet,auto){
   if(m.kind==='cardemi'){const c=x.ce.c,ls=(S.secs.find(s=>s.type==='loan')||{k:'loans'}).k;
     const it={id:uid(),sec:ls,name:`${c.name}${c.last4?' ••'+c.last4:''} · ${shortRs(m.amt)} · ${dLabel(m.date)}`,amt:0,day:c.due||1,freq:'monthly',start:ymOf(m.date),asOf:ymOf(m.date),left:0,roi:0,loanAmt:m.amt,
       inBill:true,emiCard:c.id,mode:'card:'+c.id,src:m.id,note:'Card EMI (paid inside the card bill) — add EMI, months and interest from the bank\'s EMI schedule to confirm',ok:false};
-    S.items.push(it);U.push({t:'newitem',id:it.id})}
+    S.items.push(it);U.push({t:'newitem',id:it.id});
+    const bi=/icici/i.test(m.bank||'')&&S.items.find(i=>i.cardId===c.id);
+    if(bi)for(const ym of [ymOf(m.date),addM(ymOf(m.date),1)]){if(!occurs(bi,ym))continue;const e=entry(bi,ym),r=S.rec[e.key]||{};if(e.paid||!(+r.amt))continue;
+      const d=Math.min(+c.stmt||1,28);let sy=ymOf(e.date);if(+e.date.slice(8)<=d)sy=addM(sy,-1);const sd=sy+'-'+String(d).padStart(2,'0');
+      if(m.date>sd&&m.date<=e.date&&m.amt<=+r.amt){recU(e.key);S.rec[e.key]={...r,amt:Math.round(+r.amt-m.amt),conv:(+r.conv||0)+m.amt};x.s+=` · ${mName(ym)} bill lowered by ${rs(m.amt)} (undo if it was unbilled)`;break}}}
   else if(m.kind==='util'){const it=x.uit,e=x.ue;recU(e.key);const r=S.rec[e.key]||{};
     if(m.paid)S.rec[e.key]={...r,amt:m.amt,paid:true,date:m.date,mode:'Amazon Pay'};
     else{itU(it);it.day=+m.due.slice(8);S.rec[e.key]={...r,amt:m.amt}}}
@@ -1505,7 +1510,7 @@ function sumSnapshot(){
   const es=entries(cur),secT=k=>es.filter(x=>x.it.sec===k&&!x.it.hold).reduce((a,x)=>a+amtE(x),0);
   const bankE=L.filter(i=>!i.inBill&&!i.noDebt).reduce((a,i)=>a+emiInM(i,cur),0),cardE=L.filter(i=>i.inBill).reduce((a,i)=>a+emiInM(i,cur),0);
   const nd=L.filter(i=>i.noDebt&&emiInM(i,cur));
-  const home=secT('home'),util=secT('bills')+secT('save'),insM=secT('ins'),edu=es.filter(x=>x.it.sec==='edu'&&!x.it.hold);
+  const MF=S.mfix||{power:2000,gas:750},spC=re=>(S.spends||[]).filter(x=>ymOf(x.date)===cur&&re.test(x.cat||'')).reduce((a,x)=>a+(+x.amount||0),0),gro=spC(/^groceries$/i),fuel=spC(/^fuel$/i),sip=secT('save'),util=(+MF.power||0)+(+MF.gas||0)+sip+gro+fuel;const home=secT('home'),insM=secT('ins'),edu=es.filter(x=>x.it.sec==='edu'&&!x.it.hold);
   const base=bankE+cardE+nd.reduce((a,i)=>a+ +i.amt,0)+home+util+insM;
   const incPlan=es.filter(x=>isIn(x.it)&&!x.it.hold).reduce((a,x)=>a+(x.amt||lastAmt(x.it,x.ym)||0),0),inc=Math.max(incPlan,totals(cur).inGot);
   const bor=base>inc?Math.round((base-inc)*0.03):0,need=base+bor,gap=inc-need;
@@ -1517,7 +1522,7 @@ function sumSnapshot(){
   const body=`
    <div class="msg">
     ${card('Loans',order.filter(k=>G[k]).map(k=>tr(k,rs(G[k].pv))).join(''),`<div class="mst mst3"><div><span>Principal left</span><b>${rs(pv)}</b></div><div><span>Interest still to pay</span><b>${rs(int)}</b><small>≈${pv?Math.round(int/pv*100):0}% on top</small></div><div><span>Total to repay</span><b>${rs(pv+int)}</b></div></div><div class="msh" style="margin-top:6px">Principal left by type</div>`)}
-    ${card('Mandatory · '+mName(cur),tr('Bank & other loan EMIs',rs(bankE))+tr('Card EMIs',rs(cardE),'(inside card bills)')+nd.map(i=>tr(esc(i.name),rs(i.amt),loanEnd(i)?'· ends '+mName(loanEnd(i)):'')).join('')+tr('Home expenses',rs(home))+tr('Utilities + SIP/RD',rs(util))+tr('Insurance due this month',rs(insM))+(bor?tr('Borrowing cost',rs(bor),'· 3% on gap'):'')+tr('Total this month',rs(need),'',1))}
+    ${card('Mandatory · '+mName(cur),tr('Bank & other loan EMIs',rs(bankE))+tr('Card EMIs',rs(cardE),'(inside card bills)')+nd.map(i=>tr(esc(i.name),rs(i.amt),loanEnd(i)?'· ends '+mName(loanEnd(i)):'')).join('')+tr('Home expenses',rs(home))+tr('Power',rs(+MF.power||0),'· fixed')+tr('Gas',rs(+MF.gas||0),'· fixed')+tr('Groceries',rs(gro),'· spent this month')+tr('Fuel',rs(fuel),'· spent this month')+tr('SIP + RD',rs(sip))+tr('Insurance due this month',rs(insM))+(bor?tr('Borrowing cost',rs(bor),'· 3% on gap'):'')+tr('Total this month',rs(need),'',1))}
     ${card('Fees & insurance (when due)',(edu.length?edu.map(x=>tr(esc(x.it.name),rs(amtE(x)),dLabel(x.date))).join(''):tr('Education this month','—'))+tr('Insurance due this month',rs(insM))+tr('Insurance · next 12 months',rs(insY)))}
     ${card('Income vs need',tr('Income this month',rs(inc))+tr('Mandatory this month',rs(need))+tr(gap>=0?'Spare this month':'Monthly gap',(gap<0?'− ':'')+rs(Math.abs(gap)),'',1)+drops.map(r=>tr('EMIs drop to',rs(r.t),'· '+mName(r.ym))).join(''))}
    </div>
